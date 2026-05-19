@@ -60,10 +60,12 @@ async def test_run_account_skips_already_processed(db, account, mocker):
     mocker.patch("perimail.runner.fetch_new_emails", return_value=[email])
     mocker.patch("perimail.runner.ensure_label_exists", return_value="label_id")
     apply_mock = mocker.patch("perimail.runner.apply_label")
+    classify_mock = mocker.patch("perimail.runner.classify")
 
     result = await run_account(acct, db, gemini_api_key="fake", encryption_key=key)
 
     apply_mock.assert_not_called()
+    classify_mock.assert_not_called()
     assert result.category_counts == {}
 
 

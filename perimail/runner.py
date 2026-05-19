@@ -1,5 +1,3 @@
-import asyncio
-import json
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 
@@ -26,6 +24,7 @@ async def run_account(account, db: Database, gemini_api_key: str, encryption_key
     result = AccountResult(email=account.email)
 
     tokens_json = decrypt(account.encrypted_tokens, encryption_key)
+    # Token/credential failures propagate intentionally — abort this account's run
     credentials = get_credentials(tokens_json)
     service = get_gmail_service(credentials)
 

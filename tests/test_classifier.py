@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from perimail.classifier import classify_by_rules
 from perimail.db import Category
 from perimail.fetcher import EmailMessage
@@ -61,3 +62,65 @@ def test_first_category_wins():
     ]
     email = make_email(subject="Job update for you")
     assert classify_by_rules(email, cats) == "Newsletter"
+
+
+# append to tests/test_classifier.py
+from perimail.classifier import classify, classify_with_gemini
+
+
+def test_classify_uses_rules_first():
+    cats = [make_category("Jobs", keywords=["internship"])]
+    email = make_email(subject="Internship offer")
+    category, method = classify(email, cats, api_key="fake")
+    assert category == "Jobs"
+    assert method == "rules"
+
+
+def test_classify_falls_back_to_gemini_when_no_rule_matches(mocker):
+    cats = [make_category("Jobs", keywords=["internship"])]
+    email = make_email(subject="Some unrelated subject")
+    mocker.patch("perimail.classifier.classify_with_gemini", return_value="Useful")
+    category, method = classify(email, cats, api_key="fake")
+    assert category == "Useful"
+    assert method == "gemini"
+
+
+def test_classify_with_gemini_returns_valid_category(mocker):
+    cats = [make_category("Jobs"), make_category("Newsletter")]
+    email = make_email(subject="We received your application")
+
+    mock_model = MagicMock()
+    mock_model.generate_content.return_value.text = "Jobs"
+    mocker.patch("google.generativeai.GenerativeModel", return_value=mock_model)
+    mocker.patch("google.generativeai.configure")
+
+    result = classify_with_gemini(email, cats, api_key="fake_key")
+    assert result == "Jobs"
+
+
+def test_classify_with_gemini_returns_unclassified_on_invalid_response(mocker):
+    cats = [make_category("Jobs")]
+    email = make_email(subject="Something")
+
+    mock_model = MagicMock()
+    mock_model.generate_content.return_value.text = "WeirdResponse"
+    mocker.patch("google.generativeai.GenerativeModel", return_value=mock_model)
+    mocker.patch("google.generativeai.configure")
+
+    result = classify_with_gemini(email, cats, api_key="fake_key")
+    assert result == "Unclassified"
+
+
+def test_classify_with_gemini_retries_on_exception(mocker):
+    cats = [make_category("Jobs")]
+    email = make_email(subject="Something")
+
+    mock_model = MagicMock()
+    mock_model.generate_content.side_effect = [Exception("API error"), Exception("API error"), Exception("API error")]
+    mocker.patch("google.generativeai.GenerativeModel", return_value=mock_model)
+    mocker.patch("google.generativeai.configure")
+    mocker.patch("time.sleep")
+
+    result = classify_with_gemini(email, cats, api_key="fake_key")
+    assert result == "Unclassified"
+    assert mock_model.generate_content.call_count == 3

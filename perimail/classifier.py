@@ -1,3 +1,7 @@
+import time
+
+import google.generativeai as genai
+
 from perimail.fetcher import EmailMessage
 
 UNCLASSIFIED = "Unclassified"
@@ -24,3 +28,45 @@ def classify_by_rules(email: EmailMessage, categories: list) -> str | None:
                 return category.name
 
     return None
+
+
+def classify_with_gemini(email: EmailMessage, categories: list, api_key: str) -> str:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.5-flash")
+
+    category_list = "\n".join(
+        f"- {cat.name}: {cat.description}" for cat in categories
+    )
+    prompt = (
+        "You are an email classifier. Classify the following email into exactly one of these categories:\n"
+        f"{category_list}\n\n"
+        f"Email:\nSubject: {email.subject}\nFrom: {email.sender}\n"
+        f"Snippet: {email.snippet[:200]}\n\n"
+        "Respond with only the category name, nothing else."
+    )
+
+    valid_names = {cat.name for cat in categories}
+
+    for attempt in range(3):
+        try:
+            response = model.generate_content(prompt)
+            result = response.text.strip()
+            if result in valid_names:
+                return result
+            for name in valid_names:
+                if name.lower() == result.lower():
+                    return name
+            return UNCLASSIFIED
+        except Exception:
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+
+    return UNCLASSIFIED
+
+
+def classify(email: EmailMessage, categories: list, api_key: str) -> tuple:
+    """Returns (category_name, method) where method is 'rules' or 'gemini'."""
+    result = classify_by_rules(email, categories)
+    if result:
+        return result, "rules"
+    return classify_with_gemini(email, categories, api_key), "gemini"

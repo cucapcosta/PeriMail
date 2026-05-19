@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional
 
 import aiosqlite
@@ -107,7 +107,7 @@ class Database:
     async def add_account(self, email: str, account_type: str, encrypted_tokens: str):
         await self._conn.execute(
             "INSERT INTO accounts (email, account_type, encrypted_tokens, registered_at) VALUES (?,?,?,?)",
-            (email, account_type, encrypted_tokens, datetime.utcnow().isoformat()),
+            (email, account_type, encrypted_tokens, datetime.now(UTC).isoformat()),
         )
         await self._conn.commit()
 
@@ -139,7 +139,7 @@ class Database:
         )
         await self._conn.commit()
 
-    async def get_categories(self, account_type: str = "all") -> list:
+    async def get_categories(self, account_type: str) -> list:
         rows = await self._fetchall(
             "SELECT * FROM categories WHERE applies_to='all' OR applies_to=?",
             (account_type,),
@@ -172,7 +172,7 @@ class Database:
     async def mark_processed(self, message_id: str, account_email: str, category: str, classified_by: str):
         await self._conn.execute(
             "INSERT OR IGNORE INTO processed_messages (message_id, account_email, category, classified_by, classified_at) VALUES (?,?,?,?,?)",
-            (message_id, account_email, category, classified_by, datetime.utcnow().isoformat()),
+            (message_id, account_email, category, classified_by, datetime.now(UTC).isoformat()),
         )
         await self._conn.commit()
 

@@ -57,6 +57,15 @@ async def test_get_categories_filters_by_type(db):
     assert any(c.name == "ProfOnly" for c in prof_cats)
 
 
+async def test_get_categories_requires_account_type(db):
+    # Verify that get_categories requires explicit account_type parameter
+    try:
+        await db.get_categories()
+        assert False, "get_categories should require account_type parameter"
+    except TypeError:
+        pass  # Expected
+
+
 async def test_mark_and_check_processed(db):
     await db.mark_processed("msg_001", "test@gmail.com", "Jobs", "rules")
     assert await db.is_processed("msg_001", "test@gmail.com")
@@ -64,11 +73,11 @@ async def test_mark_and_check_processed(db):
 
 
 async def test_get_stats_since(db):
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, UTC
     await db.mark_processed("m1", "test@gmail.com", "Jobs", "rules")
     await db.mark_processed("m2", "test@gmail.com", "Jobs", "gemini")
     await db.mark_processed("m3", "test@gmail.com", "Newsletter", "rules")
-    since = datetime.utcnow() - timedelta(minutes=1)
+    since = datetime.now(UTC) - timedelta(minutes=1)
     stats = await db.get_stats_since("test@gmail.com", since)
     assert stats["Jobs"] == 2
     assert stats["Newsletter"] == 1

@@ -21,6 +21,7 @@ class OAuthServer:
         self._runner: Optional[web.AppRunner] = None
 
     def generate_state(self, discord_user_id: int, account_type: str) -> str:
+        self._pending = {s: v for s, v in self._pending.items() if time.time() < v["expires_at"]}
         state = secrets.token_urlsafe(32)
         self._pending[state] = {
             "discord_user_id": discord_user_id,
@@ -47,6 +48,9 @@ class OAuthServer:
 
         del self._pending[state]
 
+        if not code:
+            return web.Response(status=400, text="Missing authorization code. Run /add-account again.")
+
         try:
             loop = asyncio.get_running_loop()
             tokens, email = await loop.run_in_executor(None, exchange_code, code)
@@ -58,10 +62,10 @@ class OAuthServer:
 
             return web.Response(
                 content_type="text/html",
-                body="<html><body><h2>✓ Authorization successful!</h2><p>You can close this tab and return to Discord.</p></body></html>",
+                text="<html><body><h2>✓ Authorization successful!</h2><p>You can close this tab and return to Discord.</p></body></html>",
             )
         except Exception as e:
-            return web.Response(status=500, text=f"Error during authorization: {e}")
+            return web.Response(status=500, text=f"Authorization failed: {e}. Please run /add-account again.")
 
     async def _handle_health(self, request: web.Request) -> web.Response:
         return web.Response(text="ok")

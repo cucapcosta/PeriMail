@@ -1,12 +1,23 @@
+import os
 import pytest
 from perimail.db import Database
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+pytestmark = pytest.mark.skipif(
+    not DATABASE_URL,
+    reason="DATABASE_URL not set — skipping PostgreSQL tests"
+)
 
 
 @pytest.fixture
 async def db():
-    d = Database(":memory:")
+    d = Database(DATABASE_URL)
     await d.connect()
     yield d
+    async with d._pool.acquire() as conn:
+        await conn.execute("DELETE FROM processed_messages WHERE account_email LIKE 'test%'")
+        await conn.execute("DELETE FROM accounts WHERE email LIKE 'test%'")
+        await conn.execute("DELETE FROM categories WHERE name NOT IN ('Spam', 'Newsletter', 'Jobs', 'Useful')")
     await d.close()
 
 
@@ -26,18 +37,18 @@ async def test_add_and_get_account(db):
 
 
 async def test_remove_account(db):
-    await db.add_account("gone@gmail.com", "professional", "tok")
-    await db.remove_account("gone@gmail.com")
-    assert await db.get_account("gone@gmail.com") is None
+    await db.add_account("test_gone@gmail.com", "professional", "tok")
+    await db.remove_account("test_gone@gmail.com")
+    assert await db.get_account("test_gone@gmail.com") is None
 
 
 async def test_list_accounts(db):
-    await db.add_account("a@gmail.com", "personal", "t1")
-    await db.add_account("b@gmail.com", "professional", "t2")
+    await db.add_account("test_a@gmail.com", "personal", "t1")
+    await db.add_account("test_b@gmail.com", "professional", "t2")
     accounts = await db.list_accounts()
     emails = [a.email for a in accounts]
-    assert "a@gmail.com" in emails
-    assert "b@gmail.com" in emails
+    assert "test_a@gmail.com" in emails
+    assert "test_b@gmail.com" in emails
 
 
 async def test_add_and_remove_category(db):
@@ -74,9 +85,9 @@ async def test_mark_and_check_processed(db):
 
 async def test_get_stats_since(db):
     from datetime import datetime, timedelta, UTC
-    await db.mark_processed("m1", "test@gmail.com", "Jobs", "rules")
-    await db.mark_processed("m2", "test@gmail.com", "Jobs", "gemini")
-    await db.mark_processed("m3", "test@gmail.com", "Newsletter", "rules")
+    await db.mark_processed("test_m1", "test@gmail.com", "Jobs", "rules")
+    await db.mark_processed("test_m2", "test@gmail.com", "Jobs", "gemini")
+    await db.mark_processed("test_m3", "test@gmail.com", "Newsletter", "rules")
     since = datetime.now(UTC) - timedelta(minutes=1)
     stats = await db.get_stats_since("test@gmail.com", since)
     assert stats["Jobs"] == 2
@@ -84,7 +95,7 @@ async def test_get_stats_since(db):
 
 
 async def test_update_account_tokens(db):
-    await db.add_account("upd@gmail.com", "personal", "old_token")
-    await db.update_account_tokens("upd@gmail.com", "new_token")
-    account = await db.get_account("upd@gmail.com")
+    await db.add_account("test_upd@gmail.com", "personal", "old_token")
+    await db.update_account_tokens("test_upd@gmail.com", "new_token")
+    account = await db.get_account("test_upd@gmail.com")
     assert account.encrypted_tokens == "new_token"

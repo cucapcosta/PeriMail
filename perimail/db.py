@@ -4,9 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, UTC
 from typing import Optional
 
-import aiosqlite
-
-DB_PATH = os.environ.get("DB_PATH", "perimail.db")
+import asyncpg
 
 
 @dataclass
@@ -30,155 +28,168 @@ class Category:
 
 
 class Database:
-    def __init__(self, db_path: str = DB_PATH):
-        self.db_path = db_path
-        self._conn: Optional[aiosqlite.Connection] = None
+    def __init__(self, dsn: str = None):
+        self._dsn = dsn or os.environ["DATABASE_URL"]
+        self._pool: Optional[asyncpg.Pool] = None
 
     async def connect(self):
-        self._conn = await aiosqlite.connect(self.db_path)
-        self._conn.row_factory = aiosqlite.Row
-        await self._conn.execute("PRAGMA journal_mode=WAL")
-        await self._conn.execute("PRAGMA foreign_keys=ON")
+        self._pool = await asyncpg.create_pool(self._dsn)
         await self._init_schema()
 
     async def close(self):
-        if self._conn:
-            await self._conn.close()
-            self._conn = None
+        if self._pool:
+            await self._pool.close()
+            self._pool = None
 
     async def _init_schema(self):
-        await self._conn.executescript("""
-            CREATE TABLE IF NOT EXISTS accounts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT UNIQUE NOT NULL,
-                account_type TEXT NOT NULL,
-                encrypted_tokens TEXT NOT NULL,
-                registered_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS categories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL,
-                label TEXT NOT NULL,
-                description TEXT NOT NULL,
-                keywords TEXT NOT NULL DEFAULT '[]',
-                header_triggers TEXT NOT NULL DEFAULT '[]',
-                applies_to TEXT NOT NULL DEFAULT 'all'
-            );
-            CREATE TABLE IF NOT EXISTS processed_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                message_id TEXT NOT NULL,
-                account_email TEXT NOT NULL,
-                category TEXT NOT NULL,
-                classified_by TEXT NOT NULL,
-                classified_at TEXT NOT NULL,
-                UNIQUE(message_id, account_email)
-            );
-        """)
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS accounts (
+                    id SERIAL PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    account_type TEXT NOT NULL,
+                    encrypted_tokens TEXT NOT NULL,
+                    registered_at TIMESTAMP NOT NULL
+                );
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS categories (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    label TEXT NOT NULL,
+                    description TEXT NOT NULL DEFAULT '',
+                    keywords TEXT NOT NULL DEFAULT '[]',
+                    header_triggers TEXT NOT NULL DEFAULT '[]',
+                    applies_to TEXT NOT NULL DEFAULT 'all'
+                );
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS processed_messages (
+                    id SERIAL PRIMARY KEY,
+                    message_id TEXT NOT NULL,
+                    account_email TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    classified_by TEXT NOT NULL,
+                    classified_at TIMESTAMP NOT NULL,
+                    UNIQUE(message_id, account_email)
+                );
+            """)
         await self._seed_default_categories()
 
     async def _seed_default_categories(self):
-        row = await self._fetchone("SELECT COUNT(*) as c FROM categories")
-        if row["c"] > 0:
-            return
-        defaults = [
-            ("Spam", "PeriMail/Spam", "Unwanted emails, phishing, unsolicited messages", [], [], "all"),
-            ("Newsletter", "PeriMail/Newsletter", "Marketing emails, digests, subscription updates", [], ["List-Unsubscribe", "List-Id"], "all"),
-            ("Jobs", "PeriMail/Jobs", "Job offers, internship opportunities, application status, recruiting emails", ["internship", "application received", "hiring", "offer letter", "job offer", "we received your application", "your application"], [], "all"),
-            ("Useful", "PeriMail/Useful", "Important emails that require attention or action", [], [], "all"),
-        ]
-        for name, label, desc, keywords, headers, applies_to in defaults:
-            await self._conn.execute(
-                "INSERT OR IGNORE INTO categories (name, label, description, keywords, header_triggers, applies_to) VALUES (?,?,?,?,?,?)",
-                (name, label, desc, json.dumps(keywords), json.dumps(headers), applies_to),
-            )
-        await self._conn.commit()
-
-    async def _fetchone(self, sql, params=()):
-        async with self._conn.execute(sql, params) as cursor:
-            return await cursor.fetchone()
-
-    async def _fetchall(self, sql, params=()):
-        async with self._conn.execute(sql, params) as cursor:
-            return await cursor.fetchall()
+        async with self._pool.acquire() as conn:
+            count = await conn.fetchval("SELECT COUNT(*) FROM categories")
+            if count > 0:
+                return
+            defaults = [
+                ("Spam", "PeriMail/Spam", "Spam and junk emails", "[]", '["X-Spam-Status"]', "all"),
+                ("Newsletter", "PeriMail/Newsletter", "Newsletters and mailing lists", "[]", '["List-Unsubscribe", "List-Id"]', "all"),
+                ("Jobs", "PeriMail/Jobs", "Job offers, internship applications, and recruitment emails", '["internship", "job offer", "application received", "your application"]', "[]", "all"),
+                ("Useful", "PeriMail/Useful", "Important and useful emails", "[]", "[]", "all"),
+            ]
+            for name, label, desc, keywords, headers, applies_to in defaults:
+                await conn.execute(
+                    "INSERT INTO categories (name, label, description, keywords, header_triggers, applies_to) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",
+                    name, label, desc, keywords, headers, applies_to,
+                )
 
     # --- Accounts ---
 
     async def add_account(self, email: str, account_type: str, encrypted_tokens: str):
-        await self._conn.execute(
-            "INSERT INTO accounts (email, account_type, encrypted_tokens, registered_at) VALUES (?,?,?,?)",
-            (email, account_type, encrypted_tokens, datetime.now(UTC).isoformat()),
-        )
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO accounts (email, account_type, encrypted_tokens, registered_at) VALUES ($1,$2,$3,$4)",
+                email, account_type, encrypted_tokens, datetime.now(UTC),
+            )
 
     async def get_account(self, email: str) -> Optional[Account]:
-        row = await self._fetchone("SELECT * FROM accounts WHERE email=?", (email,))
-        return Account(**dict(row)) if row else None
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM accounts WHERE email=$1", email)
+        return self._row_to_account(row) if row else None
 
     async def list_accounts(self) -> list:
-        rows = await self._fetchall("SELECT * FROM accounts")
-        return [Account(**dict(row)) for row in rows]
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch("SELECT * FROM accounts")
+        return [self._row_to_account(row) for row in rows]
 
     async def update_account_tokens(self, email: str, encrypted_tokens: str):
-        await self._conn.execute(
-            "UPDATE accounts SET encrypted_tokens=? WHERE email=?",
-            (encrypted_tokens, email),
-        )
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE accounts SET encrypted_tokens=$1 WHERE email=$2",
+                encrypted_tokens, email,
+            )
 
     async def remove_account(self, email: str):
-        await self._conn.execute("DELETE FROM accounts WHERE email=?", (email,))
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute("DELETE FROM accounts WHERE email=$1", email)
+
+    def _row_to_account(self, row) -> Account:
+        return Account(
+            id=row["id"],
+            email=row["email"],
+            account_type=row["account_type"],
+            encrypted_tokens=row["encrypted_tokens"],
+            registered_at=str(row["registered_at"]),
+        )
 
     # --- Categories ---
 
     async def add_category(self, name: str, label: str, description: str, keywords: list, header_triggers: list, applies_to: str):
-        await self._conn.execute(
-            "INSERT INTO categories (name, label, description, keywords, header_triggers, applies_to) VALUES (?,?,?,?,?,?)",
-            (name, label, description, json.dumps(keywords), json.dumps(header_triggers), applies_to),
-        )
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO categories (name, label, description, keywords, header_triggers, applies_to) VALUES ($1,$2,$3,$4,$5,$6)",
+                name, label, description, json.dumps(keywords), json.dumps(header_triggers), applies_to,
+            )
 
     async def get_categories(self, account_type: str) -> list:
-        rows = await self._fetchall(
-            "SELECT * FROM categories WHERE applies_to='all' OR applies_to=?",
-            (account_type,),
-        )
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM categories WHERE applies_to='all' OR applies_to=$1",
+                account_type,
+            )
         return [self._row_to_category(row) for row in rows]
 
     async def list_categories(self) -> list:
-        rows = await self._fetchall("SELECT * FROM categories")
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch("SELECT * FROM categories")
         return [self._row_to_category(row) for row in rows]
 
     async def remove_category(self, name: str):
-        await self._conn.execute("DELETE FROM categories WHERE name=?", (name,))
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute("DELETE FROM categories WHERE name=$1", name)
 
     def _row_to_category(self, row) -> Category:
-        d = dict(row)
-        d["keywords"] = json.loads(d["keywords"])
-        d["header_triggers"] = json.loads(d["header_triggers"])
-        return Category(**d)
+        return Category(
+            id=row["id"],
+            name=row["name"],
+            label=row["label"],
+            description=row["description"],
+            keywords=json.loads(row["keywords"]),
+            header_triggers=json.loads(row["header_triggers"]),
+            applies_to=row["applies_to"],
+        )
 
     # --- Processed Messages ---
 
     async def is_processed(self, message_id: str, account_email: str) -> bool:
-        row = await self._fetchone(
-            "SELECT 1 FROM processed_messages WHERE message_id=? AND account_email=?",
-            (message_id, account_email),
-        )
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT 1 FROM processed_messages WHERE message_id=$1 AND account_email=$2",
+                message_id, account_email,
+            )
         return row is not None
 
     async def mark_processed(self, message_id: str, account_email: str, category: str, classified_by: str):
-        await self._conn.execute(
-            "INSERT OR IGNORE INTO processed_messages (message_id, account_email, category, classified_by, classified_at) VALUES (?,?,?,?,?)",
-            (message_id, account_email, category, classified_by, datetime.now(UTC).isoformat()),
-        )
-        await self._conn.commit()
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO processed_messages (message_id, account_email, category, classified_by, classified_at) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
+                message_id, account_email, category, classified_by, datetime.now(UTC),
+            )
 
     async def get_stats_since(self, account_email: str, since: datetime) -> dict:
-        rows = await self._fetchall(
-            "SELECT category, COUNT(*) as count FROM processed_messages WHERE account_email=? AND classified_at>=? GROUP BY category",
-            (account_email, since.isoformat()),
-        )
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT category, COUNT(*) as count FROM processed_messages WHERE account_email=$1 AND classified_at>=$2 GROUP BY category",
+                account_email, since,
+            )
         return {row["category"]: row["count"] for row in rows}

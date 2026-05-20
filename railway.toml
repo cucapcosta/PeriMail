@@ -2,6 +2,6 @@
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "python bot/bot.py"
+startCommand = "python -m bot.bot"
 healthcheckPath = "/health"
 healthcheckTimeout = 10

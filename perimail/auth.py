@@ -14,7 +14,7 @@ SCOPES = [
 
 
 def _client_config() -> dict:
-    redirect_uri = f"{os.environ['RAILWAY_PUBLIC_URL']}/oauth/callback"
+    redirect_uri = f"{os.environ['PUBLIC_URL']}/oauth/callback"
     return {
         "web": {
             "client_id": os.environ["GOOGLE_CLIENT_ID"],

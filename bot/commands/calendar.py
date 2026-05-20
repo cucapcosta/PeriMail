@@ -1,5 +1,6 @@
+# bot/commands/calendar.py
 import os
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timezone
 from typing import Optional
 
 import discord
@@ -46,13 +47,21 @@ class ConfirmView(discord.ui.View):
     @discord.ui.button(label="Confirm Delete", style=discord.ButtonStyle.danger)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.confirmed = True
+        for child in self.children:
+            child.disabled = True
         self.stop()
-        await interaction.response.defer()
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        for child in self.children:
+            child.disabled = True
         self.stop()
-        await interaction.response.defer()
+        await interaction.response.edit_message(view=self)
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
 
 
 class CalendarCog(commands.Cog):
@@ -61,6 +70,8 @@ class CalendarCog(commands.Cog):
 
     async def _get_cal_service(self, email: str):
         account = await self.bot.db.get_account(email)
+        if account is None:
+            raise ValueError(f"Account `{email}` not found.")
         credentials = get_credentials(decrypt(account.encrypted_tokens, self.bot.encryption_key))
         return get_calendar_service(credentials)
 
@@ -70,7 +81,7 @@ class CalendarCog(commands.Cog):
         default = await self.bot.db.get_default_calendar(str(interaction.user.id))
         if default:
             return default
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "No default calendar set — use `/set-default-calendar` or pass `account`.",
             ephemeral=True,
         )
@@ -144,11 +155,11 @@ class CalendarCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
         email = await self._resolve_email(interaction, account)
         if not email:
             return
 
-        await interaction.response.defer(ephemeral=True)
         try:
             start_dt = _parse_datetime(date, start)
             end_dt = _parse_datetime(date, end)
@@ -185,11 +196,11 @@ class CalendarCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
         email = await self._resolve_email(interaction, account)
         if not email:
             return
 
-        await interaction.response.defer(ephemeral=True)
         try:
             service = await self._get_cal_service(email)
             existing = get_event(service, event_id)
@@ -206,10 +217,15 @@ class CalendarCog(commands.Cog):
                 fields["start"] = _parse_datetime(date, start)
             elif start:
                 fields["start"] = _parse_datetime(existing.start.strftime("%d/%m"), start)
+            elif date:
+                fields["start"] = _parse_datetime(date, existing.start.strftime("%H:%M"))
+
             if date and end:
                 fields["end"] = _parse_datetime(date, end)
             elif end:
                 fields["end"] = _parse_datetime(existing.end.strftime("%d/%m"), end)
+            elif date:
+                fields["end"] = _parse_datetime(date, existing.end.strftime("%H:%M"))
 
             event = update_event(service, event_id, existing.calendar_id, **fields)
             await interaction.followup.send(
@@ -233,11 +249,11 @@ class CalendarCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
         email = await self._resolve_email(interaction, account)
         if not email:
             return
 
-        await interaction.response.defer(ephemeral=True)
         try:
             service = await self._get_cal_service(email)
             existing = get_event(service, event_id)

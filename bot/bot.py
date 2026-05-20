@@ -24,7 +24,7 @@ class PeriMailBot(commands.Bot):
 
     async def setup_hook(self):
         self.tree.allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=True)
-        self.tree.allowed_contexts = discord.app_commands.AppCommandContext(guild=True, bot_dm=True, private_channel=True)
+        self.tree.allowed_contexts = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
         await self.load_extension("bot.commands.accounts")
         await self.load_extension("bot.commands.categories")
         await self.load_extension("bot.commands.run")

@@ -27,6 +27,11 @@ class PeriMailBot(commands.Bot):
         await self.load_extension("bot.commands.categories")
         await self.load_extension("bot.commands.run")
         await self.load_extension("bot.commands.calendar")
+        guild_id = os.environ.get("DISCORD_GUILD_ID")
+        if guild_id:
+            guild = discord.Object(id=int(guild_id))
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
         await self.tree.sync()
 
     async def on_ready(self):

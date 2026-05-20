@@ -34,9 +34,9 @@ class RunCog(commands.Cog):
             )
             report = build_report(results, datetime.now(UTC))
             chunks = [report[i:i+1900] for i in range(0, len(report), 1900)] or ["(empty report)"]
-            await interaction.followup.send(chunks[0], ephemeral=True)
-            for chunk in chunks[1:]:
-                await interaction.followup.send(chunk, ephemeral=True)
+            for chunk in chunks:
+                await interaction.user.send(chunk)
+            await interaction.followup.send("Report sent to DM.", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"Error: {e}", ephemeral=True)
 

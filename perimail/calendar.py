@@ -4,6 +4,7 @@ from typing import Optional
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 
 @dataclass
@@ -13,9 +14,9 @@ class CalendarEvent:
     title: str
     start: datetime
     end: datetime
-    location: Optional[str]
-    description: Optional[str]
-    all_day: bool
+    location: Optional[str] = None
+    description: Optional[str] = None
+    all_day: bool = False
 
 
 def get_calendar_service(credentials: Credentials):
@@ -57,7 +58,11 @@ def create_event(
 
 
 def update_event(service, event_id: str, calendar_id: str, **fields) -> CalendarEvent:
-    event = service.events().get(calendarId=calendar_id, eventId=event_id).execute()
+    event = dict(service.events().get(calendarId=calendar_id, eventId=event_id).execute())
+    KNOWN_FIELDS = {"title", "description", "start", "end"}
+    unknown = set(fields) - KNOWN_FIELDS
+    if unknown:
+        raise ValueError(f"Unknown update fields: {unknown}")
     if "title" in fields:
         event["summary"] = fields["title"]
     if "description" in fields:
@@ -75,11 +80,12 @@ def delete_event(service, event_id: str, calendar_id: str) -> None:
 
 
 def find_events(service, query: str, target_date: Optional[date] = None) -> list[CalendarEvent]:
-    kwargs: dict = {"q": query, "singleEvents": True, "orderBy": "startTime"}
+    kwargs: dict = {"q": query, "singleEvents": True}
     if target_date:
         day_start = datetime(target_date.year, target_date.month, target_date.day, tzinfo=timezone.utc)
         kwargs["timeMin"] = day_start.isoformat()
         kwargs["timeMax"] = (day_start + timedelta(days=1)).isoformat()
+        kwargs["orderBy"] = "startTime"
     calendars = service.calendarList().list().execute().get("items", [])
     events = []
     for cal in calendars:
@@ -96,8 +102,10 @@ def get_event(service, event_id: str) -> Optional[CalendarEvent]:
         try:
             item = service.events().get(calendarId=cal["id"], eventId=event_id).execute()
             return _parse_event(item, cal["id"])
-        except Exception:
-            continue
+        except HttpError as exc:
+            if exc.resp.status == 404:
+                continue
+            raise
     return None
 
 

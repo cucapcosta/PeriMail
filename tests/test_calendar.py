@@ -2,10 +2,11 @@ from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
+from googleapiclient.errors import HttpError
 
 from perimail.calendar import (
     CalendarEvent, _parse_event, list_events, create_event,
-    update_event, delete_event, get_event,
+    update_event, delete_event, get_event, find_events,
 )
 
 
@@ -163,6 +164,21 @@ def test_get_event_found():
 def test_get_event_not_found():
     service = MagicMock()
     service.calendarList().list().execute.return_value = {"items": [{"id": "primary"}]}
-    service.events().get().execute.side_effect = Exception("Not Found")
+    resp = MagicMock()
+    resp.status = 404
+    service.events().get().execute.side_effect = HttpError(resp=resp, content=b"Not Found")
     event = get_event(service, "missing")
     assert event is None
+
+
+def test_find_events_with_query():
+    service = MagicMock()
+    service.calendarList().list().execute.return_value = {"items": [{"id": "primary"}]}
+    service.events().list().execute.return_value = {"items": [
+        {"id": "e1", "summary": "Budget meeting",
+         "start": {"dateTime": "2026-05-20T10:00:00Z"},
+         "end": {"dateTime": "2026-05-20T11:00:00Z"}},
+    ]}
+    events = find_events(service, "budget")
+    assert len(events) == 1
+    assert events[0].title == "Budget meeting"

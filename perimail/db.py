@@ -122,7 +122,7 @@ class Database:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 "INSERT INTO accounts (email, account_type, encrypted_tokens, registered_at) VALUES ($1,$2,$3,$4)",
-                email, account_type, encrypted_tokens, datetime.now(UTC),
+                email, account_type, encrypted_tokens, datetime.now(UTC).replace(tzinfo=None),
             )
 
     async def get_account(self, email: str) -> Optional[Account]:
@@ -206,7 +206,7 @@ class Database:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 "INSERT INTO processed_messages (message_id, account_email, category, classified_by, classified_at) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
-                message_id, account_email, category, classified_by, datetime.now(UTC),
+                message_id, account_email, category, classified_by, datetime.now(UTC).replace(tzinfo=None),
             )
 
     async def get_stats_since(self, account_email: str, since: datetime) -> dict:

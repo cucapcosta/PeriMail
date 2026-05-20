@@ -1,6 +1,6 @@
 import time
 
-import google.generativeai as genai
+from google import genai
 
 from perimail.fetcher import EmailMessage
 
@@ -31,8 +31,7 @@ def classify_by_rules(email: EmailMessage, categories: list) -> str | None:
 
 
 def classify_with_gemini(email: EmailMessage, categories: list, api_key: str) -> str:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    client = genai.Client(api_key=api_key)
 
     category_list = "\n".join(
         f"- {cat.name}: {cat.description}" for cat in categories
@@ -49,7 +48,10 @@ def classify_with_gemini(email: EmailMessage, categories: list, api_key: str) ->
 
     for attempt in range(3):
         try:
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
             result = response.text.strip()
             if result in valid_names:
                 return result

@@ -89,10 +89,9 @@ def test_classify_with_gemini_returns_valid_category(mocker):
     cats = [make_category("Jobs"), make_category("Newsletter")]
     email = make_email(subject="We received your application")
 
-    mock_model = MagicMock()
-    mock_model.generate_content.return_value.text = "Jobs"
-    mocker.patch("google.generativeai.GenerativeModel", return_value=mock_model)
-    mocker.patch("google.generativeai.configure")
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value.text = "Jobs"
+    mocker.patch("perimail.classifier.genai.Client", return_value=mock_client)
 
     result = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Jobs"
@@ -102,10 +101,9 @@ def test_classify_with_gemini_returns_unclassified_on_invalid_response(mocker):
     cats = [make_category("Jobs")]
     email = make_email(subject="Something")
 
-    mock_model = MagicMock()
-    mock_model.generate_content.return_value.text = "WeirdResponse"
-    mocker.patch("google.generativeai.GenerativeModel", return_value=mock_model)
-    mocker.patch("google.generativeai.configure")
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value.text = "WeirdResponse"
+    mocker.patch("perimail.classifier.genai.Client", return_value=mock_client)
 
     result = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Unclassified"
@@ -115,12 +113,11 @@ def test_classify_with_gemini_retries_on_exception(mocker):
     cats = [make_category("Jobs")]
     email = make_email(subject="Something")
 
-    mock_model = MagicMock()
-    mock_model.generate_content.side_effect = [Exception("API error"), Exception("API error"), Exception("API error")]
-    mocker.patch("google.generativeai.GenerativeModel", return_value=mock_model)
-    mocker.patch("google.generativeai.configure")
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = [Exception("API error"), Exception("API error"), Exception("API error")]
+    mocker.patch("perimail.classifier.genai.Client", return_value=mock_client)
     mocker.patch("time.sleep")
 
     result = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Unclassified"
-    assert mock_model.generate_content.call_count == 3
+    assert mock_client.models.generate_content.call_count == 3

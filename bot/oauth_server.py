@@ -20,15 +20,17 @@ class OAuthServer:
         self._encryption_key: Optional[bytes] = None
         self._runner: Optional[web.AppRunner] = None
 
-    def generate_state(self, discord_user_id: int, account_type: str) -> str:
+    def new_state_token(self) -> str:
         self._pending = {s: v for s, v in self._pending.items() if time.time() < v["expires_at"]}
-        state = secrets.token_urlsafe(32)
+        return secrets.token_urlsafe(32)
+
+    def register_state(self, state: str, discord_user_id: int, account_type: str, code_verifier: Optional[str]):
         self._pending[state] = {
             "discord_user_id": discord_user_id,
             "account_type": account_type,
             "expires_at": time.time() + 300,
+            "code_verifier": code_verifier,
         }
-        return state
 
     async def _handle_callback(self, request: web.Request) -> web.Response:
         code = request.rel_url.query.get("code")
@@ -53,7 +55,7 @@ class OAuthServer:
 
         try:
             loop = asyncio.get_running_loop()
-            tokens, email = await loop.run_in_executor(None, exchange_code, code)
+            tokens, email = await loop.run_in_executor(None, exchange_code, code, pending.get("code_verifier"))
             encrypted = encrypt(json.dumps(tokens), self._encryption_key)
             await self._db.add_account(email, pending["account_type"], encrypted)
 

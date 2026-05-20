@@ -26,7 +26,8 @@ def _client_config() -> dict:
     }
 
 
-def generate_auth_url(state: str) -> str:
+def generate_auth_url(state: str) -> tuple[str, str]:
+    """Returns (auth_url, code_verifier)."""
     config = _client_config()
     flow = Flow.from_client_config(config, scopes=SCOPES)
     flow.redirect_uri = config["web"]["redirect_uris"][0]
@@ -36,15 +37,15 @@ def generate_auth_url(state: str) -> str:
         state=state,
         prompt="consent",
     )
-    return auth_url
+    return auth_url, flow.code_verifier
 
 
-def exchange_code(code: str) -> tuple:
+def exchange_code(code: str, code_verifier: Optional[str] = None) -> tuple:
     """Returns (tokens_dict, email_address)."""
     config = _client_config()
     flow = Flow.from_client_config(config, scopes=SCOPES)
     flow.redirect_uri = config["web"]["redirect_uris"][0]
-    flow.fetch_token(code=code)
+    flow.fetch_token(code=code, code_verifier=code_verifier)
     creds = flow.credentials
 
     service = build("oauth2", "v2", credentials=creds)

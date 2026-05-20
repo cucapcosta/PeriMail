@@ -77,19 +77,42 @@ class Database:
         await self._seed_default_categories()
 
     async def _seed_default_categories(self):
+        defaults = [
+            (
+                "Spam", "PeriMail/Spam",
+                "Spam and junk emails",
+                '["spam","junk","bulk mail","click here","free offer","limited time","win","congratulations","unsubscribe",'
+                '"lixo","oferta grátis","tempo limitado","ganhou","parabéns","promoção","descadastrar","clique aqui"]',
+                '["X-Spam-Status"]', "all",
+            ),
+            (
+                "Newsletter", "PeriMail/Newsletter",
+                "Newsletters and mailing lists",
+                '["newsletter","mailing list","weekly digest","monthly update","edition","subscribe",'
+                '"boletim","lista de emails","atualização semanal","edição","assinar","cancelar assinatura"]',
+                '["List-Unsubscribe", "List-Id"]', "all",
+            ),
+            (
+                "Jobs", "PeriMail/Jobs",
+                "Job offers, internship applications, and recruitment emails",
+                '["internship","job offer","application received","your application","recruitment","hiring","vacancy","career","position",'
+                '"estágio","oferta de emprego","candidatura recebida","sua candidatura","recrutamento","contratação","vaga","carreira","trainee"]',
+                "[]", "all",
+            ),
+            (
+                "Useful", "PeriMail/Useful",
+                "Important and useful emails such as invoices, receipts, bookings, confirmations",
+                '["invoice","receipt","ticket","reservation","confirmation","booking","deadline","urgent","password reset","verification","order",'
+                '"fatura","recibo","ingresso","reserva","confirmação","reserva","prazo","urgente","redefinir senha","verificação","pedido"]',
+                "[]", "all",
+            ),
+        ]
         async with self._pool.acquire() as conn:
-            count = await conn.fetchval("SELECT COUNT(*) FROM categories")
-            if count > 0:
-                return
-            defaults = [
-                ("Spam", "PeriMail/Spam", "Spam and junk emails", "[]", '["X-Spam-Status"]', "all"),
-                ("Newsletter", "PeriMail/Newsletter", "Newsletters and mailing lists", "[]", '["List-Unsubscribe", "List-Id"]', "all"),
-                ("Jobs", "PeriMail/Jobs", "Job offers, internship applications, and recruitment emails", '["internship", "job offer", "application received", "your application"]', "[]", "all"),
-                ("Useful", "PeriMail/Useful", "Important and useful emails", "[]", "[]", "all"),
-            ]
             for name, label, desc, keywords, headers, applies_to in defaults:
                 await conn.execute(
-                    "INSERT INTO categories (name, label, description, keywords, header_triggers, applies_to) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",
+                    """INSERT INTO categories (name, label, description, keywords, header_triggers, applies_to)
+                       VALUES ($1,$2,$3,$4,$5,$6)
+                       ON CONFLICT (name) DO UPDATE SET keywords=EXCLUDED.keywords, header_triggers=EXCLUDED.header_triggers""",
                     name, label, desc, keywords, headers, applies_to,
                 )
 

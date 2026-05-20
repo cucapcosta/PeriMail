@@ -51,8 +51,9 @@ class AccountsCog(commands.Cog):
             await interaction.followup.send("Timed out. Run `/add-account` again.", ephemeral=True)
             return
 
-        state = self.bot.oauth_server.generate_state(user_id, account_type)
-        url = generate_auth_url(state)
+        state = self.bot.oauth_server.new_state_token()
+        url, code_verifier = generate_auth_url(state)
+        self.bot.oauth_server.register_state(state, user_id, account_type, code_verifier)
         await interaction.followup.send(
             f"Click this link to authorize Gmail access (expires in 5 minutes):\n{url}",
             ephemeral=True,

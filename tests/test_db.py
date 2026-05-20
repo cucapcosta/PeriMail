@@ -18,6 +18,7 @@ async def db():
         await conn.execute("DELETE FROM processed_messages WHERE account_email LIKE 'test%'")
         await conn.execute("DELETE FROM accounts WHERE email LIKE 'test%'")
         await conn.execute("DELETE FROM categories WHERE name NOT IN ('Spam', 'Newsletter', 'Jobs', 'Useful')")
+        await conn.execute("DELETE FROM settings")
     await d.close()
 
 
@@ -99,3 +100,21 @@ async def test_update_account_tokens(db):
     await db.update_account_tokens("test_upd@gmail.com", "new_token")
     account = await db.get_account("test_upd@gmail.com")
     assert account.encrypted_tokens == "new_token"
+
+
+async def test_set_and_get_default_calendar(db):
+    await db.set_default_calendar("12345", "user@gmail.com")
+    result = await db.get_default_calendar("12345")
+    assert result == "user@gmail.com"
+
+
+async def test_get_default_calendar_returns_none_when_missing(db):
+    result = await db.get_default_calendar("99999")
+    assert result is None
+
+
+async def test_set_default_calendar_overwrites(db):
+    await db.set_default_calendar("12345", "first@gmail.com")
+    await db.set_default_calendar("12345", "second@gmail.com")
+    result = await db.get_default_calendar("12345")
+    assert result == "second@gmail.com"

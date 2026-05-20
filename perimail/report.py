@@ -47,7 +47,7 @@ def build_calendar_section(events_by_account: dict, target_date: date) -> str:
                     lines.append(f"  {event.start.strftime('%H:%M')}  {event.title}")
         lines.append("")
 
-    if not events_by_account or all(not evts for evts in events_by_account.values()):
+    if not events_by_account:
         lines.append("No events today.")
 
     return "\n".join(lines)

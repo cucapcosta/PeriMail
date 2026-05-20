@@ -94,3 +94,14 @@ def test_calendar_section_multiple_accounts():
     assert "a@gmail.com" in section
     assert "b@gmail.com" in section
     assert "Meeting" in section
+
+
+def test_calendar_section_no_events_today_only_on_empty_dict():
+    section = build_calendar_section({}, date(2026, 5, 20))
+    assert "No events today." in section
+
+
+def test_calendar_section_accounts_with_no_events_no_section_level_message():
+    section = build_calendar_section({"user@gmail.com": []}, date(2026, 5, 20))
+    assert "No events" in section
+    assert "No events today." not in section

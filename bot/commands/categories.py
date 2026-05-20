@@ -21,6 +21,10 @@ class CategoriesCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        if interaction.channel is None:
+            await interaction.response.send_message("This command must be used in a server channel.", ephemeral=True)
+            return
+
         channel = interaction.channel
         user_id = interaction.user.id
 
@@ -31,6 +35,10 @@ class CategoriesCog(commands.Cog):
             await channel.send(prompt)
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60.0)
+                try:
+                    await msg.delete()
+                except discord.Forbidden:
+                    pass
                 return msg.content.strip()
             except asyncio.TimeoutError:
                 await channel.send("Timed out. Run `/add-category` again.")
@@ -62,6 +70,10 @@ class CategoriesCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        if interaction.channel is None:
+            await interaction.response.send_message("This command must be used in a server channel.", ephemeral=True)
+            return
+
         cats = await self.bot.db.list_categories()
         if not cats:
             await interaction.response.send_message("No categories.", ephemeral=True)
@@ -80,6 +92,10 @@ class CategoriesCog(commands.Cog):
 
         try:
             msg = await self.bot.wait_for("message", check=check, timeout=60.0)
+            try:
+                await msg.delete()
+            except discord.Forbidden:
+                pass
             name = msg.content.strip()
         except asyncio.TimeoutError:
             await interaction.followup.send("Timed out.", ephemeral=True)

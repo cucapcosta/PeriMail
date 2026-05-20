@@ -23,6 +23,10 @@ class AccountsCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        if interaction.channel is None:
+            await interaction.response.send_message("This command must be used in a server channel.", ephemeral=True)
+            return
+
         await interaction.response.send_message(
             "Account type? Reply with `personal` or `professional`:", ephemeral=True
         )
@@ -35,6 +39,10 @@ class AccountsCog(commands.Cog):
 
         try:
             msg = await self.bot.wait_for("message", check=check, timeout=60.0)
+            try:
+                await msg.delete()
+            except discord.Forbidden:
+                pass
             account_type = msg.content.strip().lower()
             if account_type not in ("personal", "professional"):
                 await interaction.followup.send("Invalid type. Run `/add-account` again.", ephemeral=True)
@@ -56,6 +64,10 @@ class AccountsCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
+        if interaction.channel is None:
+            await interaction.response.send_message("This command must be used in a server channel.", ephemeral=True)
+            return
+
         accounts = await self.bot.db.list_accounts()
         if not accounts:
             await interaction.response.send_message("No accounts registered.", ephemeral=True)
@@ -74,6 +86,10 @@ class AccountsCog(commands.Cog):
 
         try:
             msg = await self.bot.wait_for("message", check=check, timeout=60.0)
+            try:
+                await msg.delete()
+            except discord.Forbidden:
+                pass
             email = msg.content.strip()
         except asyncio.TimeoutError:
             await interaction.followup.send("Timed out.", ephemeral=True)

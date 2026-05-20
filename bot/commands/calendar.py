@@ -135,8 +135,8 @@ class CalendarCog(commands.Cog):
         interaction: discord.Interaction,
         title: str,
         date: str,
-        end: str,
         start: str,
+        end: str,
         description: Optional[str] = None,
         account: Optional[str] = None,
     ):

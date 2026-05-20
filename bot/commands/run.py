@@ -1,5 +1,4 @@
 # bot/commands/run.py
-import base64
 import os
 from datetime import datetime, UTC
 
@@ -34,7 +33,7 @@ class RunCog(commands.Cog):
                 self.bot.encryption_key,
             )
             report = build_report(results, datetime.now(UTC))
-            chunks = [report[i:i+1900] for i in range(0, len(report), 1900)]
+            chunks = [report[i:i+1900] for i in range(0, len(report), 1900)] or ["(empty report)"]
             await interaction.followup.send(chunks[0], ephemeral=True)
             for chunk in chunks[1:]:
                 await interaction.followup.send(chunk, ephemeral=True)

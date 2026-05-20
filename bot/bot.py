@@ -23,15 +23,12 @@ class PeriMailBot(commands.Bot):
         self.encryption_key = base64.b64decode(os.environ["ENCRYPTION_KEY"])
 
     async def setup_hook(self):
+        self.tree.allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+        self.tree.allowed_contexts = discord.app_commands.AppCommandContext(guild=True, bot_dm=True, private_channel=True)
         await self.load_extension("bot.commands.accounts")
         await self.load_extension("bot.commands.categories")
         await self.load_extension("bot.commands.run")
         await self.load_extension("bot.commands.calendar")
-        guild_id = os.environ.get("DISCORD_GUILD_ID")
-        if guild_id:
-            guild = discord.Object(id=int(guild_id))
-            self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
         await self.tree.sync()
 
     async def on_ready(self):

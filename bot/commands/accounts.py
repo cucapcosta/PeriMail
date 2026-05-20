@@ -119,6 +119,66 @@ class AccountsCog(commands.Cog):
             lines.append(f"- `{a.email}` ({a.account_type})")
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
+    @app_commands.command(name="reauth-account", description="Re-authorize an account to grant calendar access")
+    async def reauth_account(self, interaction: discord.Interaction):
+        if not _authorized(interaction):
+            await interaction.response.send_message("Unauthorized.", ephemeral=True)
+            return
+
+        accounts = await self.bot.db.list_accounts()
+        if not accounts:
+            await interaction.response.send_message("No accounts registered.", ephemeral=True)
+            return
+
+        if len(accounts) == 1:
+            email = accounts[0].email
+            state = self.bot.oauth_server.new_state_token()
+            url, code_verifier = generate_auth_url(state)
+            self.bot.oauth_server.register_state(state, interaction.user.id, "", code_verifier, is_reauth=True)
+            await interaction.response.send_message(
+                f"Click to re-authorize `{email}` with calendar access (expires in 5 minutes):\n{url}",
+                ephemeral=True,
+            )
+            return
+
+        if interaction.channel is None:
+            await interaction.response.send_message("This command must be used in a server channel.", ephemeral=True)
+            return
+
+        options = "\n".join(f"- `{a.email}`" for a in accounts)
+        await interaction.response.send_message(
+            f"Which account to re-authorize? Reply with the email address:\n{options}", ephemeral=True
+        )
+
+        channel = interaction.channel
+        user_id = interaction.user.id
+
+        def check(m: discord.Message) -> bool:
+            return m.author.id == user_id and m.channel.id == channel.id
+
+        try:
+            msg = await self.bot.wait_for("message", check=check, timeout=60.0)
+            try:
+                await msg.delete()
+            except discord.Forbidden:
+                pass
+            email = msg.content.strip()
+        except asyncio.TimeoutError:
+            await interaction.followup.send("Timed out.", ephemeral=True)
+            return
+
+        if not any(a.email == email for a in accounts):
+            await interaction.followup.send(f"`{email}` not found.", ephemeral=True)
+            return
+
+        state = self.bot.oauth_server.new_state_token()
+        url, code_verifier = generate_auth_url(state)
+        self.bot.oauth_server.register_state(state, interaction.user.id, "", code_verifier, is_reauth=True)
+        await interaction.followup.send(
+            f"Click to re-authorize `{email}` with calendar access (expires in 5 minutes):\n{url}",
+            ephemeral=True,
+        )
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AccountsCog(bot))

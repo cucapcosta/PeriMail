@@ -30,6 +30,8 @@ class PeriMailBot(commands.Bot):
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
+        user = await self.fetch_user(int(os.environ["DISCORD_USER_ID"]))
+        await user.send("👋 Peri is online and ready.")
 
 
 async def main():

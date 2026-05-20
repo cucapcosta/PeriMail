@@ -1,7 +1,9 @@
-.worktrees/
 venv/
 *.egg-info/
 __pycache__/
 *.pyc
 .env
-docs/superpowers/
+docs/
+tests/
+.worktrees/
+.git/

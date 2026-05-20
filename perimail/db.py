@@ -143,10 +143,12 @@ class Database:
 
     async def update_account_tokens(self, email: str, encrypted_tokens: str):
         async with self._pool.acquire() as conn:
-            await conn.execute(
+            status = await conn.execute(
                 "UPDATE accounts SET encrypted_tokens=$1 WHERE email=$2",
                 encrypted_tokens, email,
             )
+        if status == "UPDATE 0":
+            raise ValueError(f"No account found for {email}")
 
     async def remove_account(self, email: str):
         async with self._pool.acquire() as conn:

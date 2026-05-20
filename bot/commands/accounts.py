@@ -134,7 +134,7 @@ class AccountsCog(commands.Cog):
             email = accounts[0].email
             state = self.bot.oauth_server.new_state_token()
             url, code_verifier = generate_auth_url(state)
-            self.bot.oauth_server.register_state(state, interaction.user.id, "", code_verifier, is_reauth=True)
+            self.bot.oauth_server.register_state(state, interaction.user.id, "", code_verifier, is_reauth=True, selected_email=email)
             await interaction.response.send_message(
                 f"Click to re-authorize `{email}` with calendar access (expires in 5 minutes):\n{url}",
                 ephemeral=True,
@@ -173,7 +173,7 @@ class AccountsCog(commands.Cog):
 
         state = self.bot.oauth_server.new_state_token()
         url, code_verifier = generate_auth_url(state)
-        self.bot.oauth_server.register_state(state, interaction.user.id, "", code_verifier, is_reauth=True)
+        self.bot.oauth_server.register_state(state, interaction.user.id, "", code_verifier, is_reauth=True, selected_email=email)
         await interaction.followup.send(
             f"Click to re-authorize `{email}` with calendar access (expires in 5 minutes):\n{url}",
             ephemeral=True,

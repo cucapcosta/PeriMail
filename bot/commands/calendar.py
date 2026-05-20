@@ -13,6 +13,7 @@ from perimail.calendar import (
     update_event, delete_event, find_events, get_event,
 )
 from perimail.crypto import decrypt
+from perimail.report import _MONTH_NAMES
 
 
 def _authorized(interaction: discord.Interaction) -> bool:
@@ -34,9 +35,6 @@ def _format_event(event: CalendarEvent) -> str:
     time_str = "All day" if event.all_day else event.start.strftime("%H:%M")
     location = f" @ {event.location}" if event.location else ""
     return f"  {time_str}  {event.title}{location} `({event.id})`"
-
-
-_MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
 
 class ConfirmView(discord.ui.View):
@@ -102,8 +100,12 @@ class CalendarCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
 
-        target = _parse_date(date) if date else datetime.now(timezone.utc).date()
         await interaction.response.defer(ephemeral=True)
+        try:
+            target = _parse_date(date) if date else datetime.now(timezone.utc).date()
+        except ValueError:
+            await interaction.followup.send("Invalid date format. Use DD/MM (e.g. 20/06).", ephemeral=True)
+            return
 
         accounts = await self.bot.db.list_accounts()
         if not accounts:
@@ -226,6 +228,10 @@ class CalendarCog(commands.Cog):
                 fields["end"] = _parse_datetime(existing.end.strftime("%d/%m"), end)
             elif date:
                 fields["end"] = _parse_datetime(date, existing.end.strftime("%H:%M"))
+
+            if not fields:
+                await interaction.followup.send("No fields to update were provided.", ephemeral=True)
+                return
 
             event = update_event(service, event_id, existing.calendar_id, **fields)
             await interaction.followup.send(

@@ -26,6 +26,7 @@ class PeriMailBot(commands.Bot):
         await self.load_extension("bot.commands.accounts")
         await self.load_extension("bot.commands.categories")
         await self.load_extension("bot.commands.run")
+        await self.load_extension("bot.commands.calendar")
         await self.tree.sync()
 
     async def on_ready(self):

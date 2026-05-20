@@ -1,2 +1,2 @@
-bot: python bot/bot.py
+bot: python -m bot.bot
 cron: python main.py

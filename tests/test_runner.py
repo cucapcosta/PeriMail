@@ -6,12 +6,21 @@ from perimail.db import Account, Category, Database
 from perimail.fetcher import EmailMessage
 from perimail.runner import AccountResult, run_account
 
+DATABASE_URL = os.environ.get("DATABASE_URL")
+pytestmark = pytest.mark.skipif(
+    not DATABASE_URL,
+    reason="DATABASE_URL not set — skipping PostgreSQL tests"
+)
+
 
 @pytest.fixture
 async def db():
-    d = Database(":memory:")
+    d = Database(DATABASE_URL)
     await d.connect()
     yield d
+    async with d._pool.acquire() as conn:
+        await conn.execute("DELETE FROM processed_messages WHERE account_email LIKE 'test%'")
+        await conn.execute("DELETE FROM accounts WHERE email LIKE 'test%'")
     await d.close()
 
 
@@ -52,9 +61,9 @@ async def test_run_account_labels_new_emails(db, account, mocker):
 
 async def test_run_account_skips_already_processed(db, account, mocker):
     acct, key = account
-    await db.mark_processed("m1", "test@gmail.com", "Jobs", "rules")
+    await db.mark_processed("test_m1", "test@gmail.com", "Jobs", "rules")
 
-    email = EmailMessage(id="m1", subject="Internship at Acme", sender="hr@acme.com", snippet="")
+    email = EmailMessage(id="test_m1", subject="Internship at Acme", sender="hr@acme.com", snippet="")
     mocker.patch("perimail.runner.get_credentials", return_value=MagicMock())
     mocker.patch("perimail.runner.get_gmail_service", return_value=MagicMock())
     mocker.patch("perimail.runner.fetch_new_emails", return_value=[email])
@@ -72,7 +81,7 @@ async def test_run_account_skips_already_processed(db, account, mocker):
 async def test_run_account_counts_failed_on_classify_error(db, account, mocker):
     acct, key = account
 
-    email = EmailMessage(id="m2", subject="Something", sender="x@y.com", snippet="")
+    email = EmailMessage(id="test_m2", subject="Something", sender="x@y.com", snippet="")
     mocker.patch("perimail.runner.get_credentials", return_value=MagicMock())
     mocker.patch("perimail.runner.get_gmail_service", return_value=MagicMock())
     mocker.patch("perimail.runner.fetch_new_emails", return_value=[email])

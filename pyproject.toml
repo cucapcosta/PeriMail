@@ -14,7 +14,7 @@ dependencies = [
     "discord.py>=2.3.2",
     "aiohttp>=3.9.5",
     "cryptography>=42.0.5",
-    "aiosqlite>=0.20.0",
+    "asyncpg>=0.29.0",
     "python-dotenv>=1.0.1",
 ]
 

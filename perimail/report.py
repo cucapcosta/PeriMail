@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 
 def build_report(results: dict, run_time: datetime) -> str:
@@ -25,4 +25,29 @@ def build_report(results: dict, run_time: datetime) -> str:
     lines.append(
         f"Classified by rules: {total_rules} | Gemini: {total_gemini} | Failed: {total_failed}"
     )
+    return "\n".join(lines)
+
+
+_MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+
+def build_calendar_section(events_by_account: dict, target_date: date) -> str:
+    date_str = f"{target_date.day} {_MONTH_NAMES[target_date.month - 1]}"
+    lines = [f"**Calendar — Today, {date_str}**", ""]
+
+    for email, events in events_by_account.items():
+        lines.append(f"**{email}**")
+        if not events:
+            lines.append("  No events")
+        else:
+            for event in events:
+                if event.all_day:
+                    lines.append(f"  All day  {event.title}")
+                else:
+                    lines.append(f"  {event.start.strftime('%H:%M')}  {event.title}")
+        lines.append("")
+
+    if not events_by_account or all(not evts for evts in events_by_account.values()):
+        lines.append("No events today.")
+
     return "\n".join(lines)

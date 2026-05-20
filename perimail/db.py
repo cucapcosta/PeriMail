@@ -237,6 +237,6 @@ class Database:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """INSERT INTO settings (discord_user_id, default_calendar_email) VALUES ($1,$2)
-                   ON CONFLICT (discord_user_id) DO UPDATE SET default_calendar_email=$2""",
+                   ON CONFLICT (discord_user_id) DO UPDATE SET default_calendar_email=EXCLUDED.default_calendar_email""",
                 discord_user_id, email,
             )

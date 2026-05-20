@@ -114,7 +114,7 @@ async def test_get_default_calendar_returns_none_when_missing(db):
 
 
 async def test_set_default_calendar_overwrites(db):
-    await db.set_default_calendar("12345", "first@gmail.com")
-    await db.set_default_calendar("12345", "second@gmail.com")
-    result = await db.get_default_calendar("12345")
+    await db.set_default_calendar("12346", "first@gmail.com")
+    await db.set_default_calendar("12346", "second@gmail.com")
+    result = await db.get_default_calendar("12346")
     assert result == "second@gmail.com"

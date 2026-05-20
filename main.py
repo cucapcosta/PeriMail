@@ -49,11 +49,14 @@ async def main():
         results = await run_all(db, gemini_api_key, encryption_key)
         report = build_report(results, run_time)
 
-        today = run_time.date()
+        today = run_time.date()  # UTC date; matches calendar API timeMin/timeMax which are also UTC
         events_by_account = {}
         for email in results:
             try:
                 account = await db.get_account(email)
+                if account is None:
+                    print(f"Calendar fetch skipped for {email}: account not found")
+                    continue
                 credentials = get_credentials(decrypt(account.encrypted_tokens, encryption_key))
                 cal_service = get_calendar_service(credentials)
                 events_by_account[email] = list_events(cal_service, today)

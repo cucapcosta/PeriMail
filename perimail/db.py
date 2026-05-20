@@ -74,6 +74,12 @@ class Database:
                     UNIQUE(message_id, account_email)
                 );
             """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    discord_user_id TEXT PRIMARY KEY,
+                    default_calendar_email TEXT
+                );
+            """)
         await self._seed_default_categories()
 
     async def _seed_default_categories(self):
@@ -137,10 +143,12 @@ class Database:
 
     async def update_account_tokens(self, email: str, encrypted_tokens: str):
         async with self._pool.acquire() as conn:
-            await conn.execute(
+            status = await conn.execute(
                 "UPDATE accounts SET encrypted_tokens=$1 WHERE email=$2",
                 encrypted_tokens, email,
             )
+        if status == "UPDATE 0":
+            raise ValueError(f"No account found for {email}")
 
     async def remove_account(self, email: str):
         async with self._pool.acquire() as conn:
@@ -216,3 +224,21 @@ class Database:
                 account_email, since,
             )
         return {row["category"]: row["count"] for row in rows}
+
+    # --- Settings ---
+
+    async def get_default_calendar(self, discord_user_id: str) -> Optional[str]:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT default_calendar_email FROM settings WHERE discord_user_id=$1",
+                discord_user_id,
+            )
+        return row["default_calendar_email"] if row else None
+
+    async def set_default_calendar(self, discord_user_id: str, email: str):
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """INSERT INTO settings (discord_user_id, default_calendar_email) VALUES ($1,$2)
+                   ON CONFLICT (discord_user_id) DO UPDATE SET default_calendar_email=EXCLUDED.default_calendar_email""",
+                discord_user_id, email,
+            )

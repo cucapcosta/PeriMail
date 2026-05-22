@@ -2,5 +2,4 @@
 builder = "DOCKERFILE"
 
 [deploy]
-healthcheckPath = "/health"
-healthcheckTimeout = 10
+startCommand = "sh entrypoint.sh"

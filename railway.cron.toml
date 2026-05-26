@@ -3,3 +3,4 @@ builder = "DOCKERFILE"
 
 [deploy]
 startCommand = "python main.py"
+cronSchedule = "0 10 * * *"

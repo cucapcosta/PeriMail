@@ -11,6 +11,12 @@ pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="DATABASE_URL not set")
 async def db():
     d = Database(DATABASE_URL)
     await d.connect()
+    # Purge before yield too: other test files (e.g. test_runner) write api_usage
+    # rows via their own fixtures and don't clean it, which would pollute the
+    # month-usage assertion below if they ran first.
+    async with d._pool.acquire() as conn:
+        await conn.execute("DELETE FROM api_usage")
+        await conn.execute("DELETE FROM category_proposals")
     yield d
     async with d._pool.acquire() as conn:
         await conn.execute("DELETE FROM api_usage")

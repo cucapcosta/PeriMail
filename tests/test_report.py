@@ -105,3 +105,55 @@ def test_calendar_section_accounts_with_no_events_no_section_level_message():
     section = build_calendar_section({"user@gmail.com": []}, date(2026, 5, 20))
     assert "No events" in section
     assert "No events today." not in section
+
+
+def test_report_gemini_picks_section():
+    results = {
+        "a@gmail.com": AccountResult(
+            email="a@gmail.com", category_counts={"Useful": 1},
+            rules_count=0, gemini_count=1,
+            gemini_picks=[("Weird subject line", "Useful")],
+        ),
+    }
+    report = build_report(results, datetime(2026, 6, 9, 7, 0))
+    assert "Gemini picks" in report
+    assert "Weird subject line" in report
+    assert "Useful" in report
+
+
+def test_report_needs_attention_section():
+    results = {
+        "a@gmail.com": AccountResult(
+            email="a@gmail.com", category_counts={"Useful": 2},
+            urgent=[(5, "Server down"), (2, "minor note"), (4, "Invoice due")],
+        ),
+    }
+    report = build_report(results, datetime(2026, 6, 9, 7, 0))
+    assert "Needs attention" in report
+    assert "Server down" in report
+    assert "Invoice due" in report
+    assert "minor note" not in report
+    assert report.index("Server down") < report.index("Invoice due")
+
+
+def test_report_proposals_notice():
+    results = {
+        "a@gmail.com": AccountResult(email="a@gmail.com", category_counts={"Unclassified": 3}, proposals_count=2),
+    }
+    report = build_report(results, datetime(2026, 6, 9, 7, 0))
+    assert "Proposed 2 new categories" in report
+
+
+def test_report_cost_footer():
+    results = {"a@gmail.com": AccountResult(email="a@gmail.com")}
+    cost_summary = {"month": "June", "cost": 0.0123, "calls": 5, "tokens": 1500}
+    report = build_report(results, datetime(2026, 6, 9, 7, 0), cost_summary=cost_summary)
+    assert "June" in report
+    assert "$0.0123" in report
+    assert "5" in report
+
+
+def test_report_no_cost_footer_when_none():
+    results = {"a@gmail.com": AccountResult(email="a@gmail.com")}
+    report = build_report(results, datetime(2026, 6, 9, 7, 0))
+    assert "Est. Gemini cost" not in report

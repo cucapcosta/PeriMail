@@ -50,13 +50,21 @@ def build_report(results: dict, run_time: datetime, cost_summary: dict = None) -
     return _append_cost("\n".join(lines), cost_summary)
 
 
-def _append_cost(body: str, cost_summary: dict) -> str:
+def format_cost_footer(cost_summary: dict) -> str:
+    """Returns the cost footer line, or '' if cost_summary is falsy."""
     if not cost_summary:
-        return body
+        return ""
     return (
-        f"{body}\n\nEst. Gemini cost ({cost_summary['month']}): "
+        f"Est. Gemini cost ({cost_summary['month']}): "
         f"${cost_summary['cost']:.4f} — {cost_summary['calls']} calls, {cost_summary['tokens']} tokens"
     )
+
+
+def _append_cost(body: str, cost_summary: dict) -> str:
+    footer = format_cost_footer(cost_summary)
+    if not footer:
+        return body
+    return f"{body}\n\n{footer}"
 
 
 _MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]

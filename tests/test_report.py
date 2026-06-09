@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from perimail.calendar import CalendarEvent
-from perimail.report import build_report, build_calendar_section
+from perimail.report import build_report, build_calendar_section, format_cost_footer
 from perimail.runner import AccountResult
 
 
@@ -157,3 +157,13 @@ def test_report_no_cost_footer_when_none():
     results = {"a@gmail.com": AccountResult(email="a@gmail.com")}
     report = build_report(results, datetime(2026, 6, 9, 7, 0))
     assert "Est. Gemini cost" not in report
+
+
+def test_format_cost_footer_present():
+    footer = format_cost_footer({"month": "June", "cost": 0.0123, "calls": 5, "tokens": 1500})
+    assert "Est. Gemini cost (June)" in footer
+    assert "$0.0123" in footer
+
+
+def test_format_cost_footer_empty_when_none():
+    assert format_cost_footer(None) == ""

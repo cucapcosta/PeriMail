@@ -36,3 +36,14 @@ def test_build_cost_summary_aggregates():
 def test_build_cost_summary_empty():
     summary = build_cost_summary([], datetime(2026, 6, 9))
     assert summary["calls"] == 0 and summary["cost"] == 0.0
+
+
+def test_gemini_prices_env_override_valid_json(monkeypatch):
+    override = '{"gemini-3.5-flash": {"in": 2.0, "out": 2.0}}'
+    monkeypatch.setenv("GEMINI_PRICES", override)
+    assert cost("gemini-3.5-flash", 1_000_000, 1_000_000) == 4.0
+
+
+def test_gemini_prices_env_override_invalid_json_falls_back(monkeypatch):
+    monkeypatch.setenv("GEMINI_PRICES", "not json")
+    assert cost("gemini-3.5-flash", 1_000_000, 0) == 1.50

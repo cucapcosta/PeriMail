@@ -38,7 +38,7 @@ def fetch_new_emails(service, since_date: str = None) -> list:
                 userId="me",
                 id=msg_ref["id"],
                 format="metadata",
-                metadataHeaders=["Subject", "From", "List-Unsubscribe", "List-Id"],
+                metadataHeaders=["Subject", "From", "List-Unsubscribe", "List-Id", "X-Spam-Status"],
             ).execute()
             headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
             emails.append(EmailMessage(

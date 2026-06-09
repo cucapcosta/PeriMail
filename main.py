@@ -6,6 +6,7 @@ from datetime import datetime, UTC
 import aiohttp
 from dotenv import load_dotenv
 
+from perimail import pricing
 from perimail.auth import get_credentials
 from perimail.calendar import get_calendar_service, list_events
 from perimail.crypto import decrypt
@@ -47,7 +48,9 @@ async def main():
         await db.connect()
         run_time = datetime.now(UTC)
         results = await run_all(db, gemini_api_key, encryption_key)
-        report = build_report(results, run_time)
+        usage_rows = await db.get_month_usage(run_time)
+        cost_summary = pricing.build_cost_summary(usage_rows, run_time)
+        report = build_report(results, run_time, cost_summary=cost_summary)
 
         today = run_time.date()  # UTC date; matches calendar API timeMin/timeMax which are also UTC
         events_by_account = {}

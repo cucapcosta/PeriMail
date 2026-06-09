@@ -6,11 +6,12 @@ from datetime import datetime, UTC
 import aiohttp
 from dotenv import load_dotenv
 
+from perimail import pricing
 from perimail.auth import get_credentials
 from perimail.calendar import get_calendar_service, list_events
 from perimail.crypto import decrypt
 from perimail.db import Database
-from perimail.report import build_calendar_section, build_report
+from perimail.report import build_calendar_section, build_report, format_cost_footer
 from perimail.runner import run_all
 
 load_dotenv()
@@ -47,6 +48,8 @@ async def main():
         await db.connect()
         run_time = datetime.now(UTC)
         results = await run_all(db, gemini_api_key, encryption_key)
+        usage_rows = await db.get_month_usage(run_time)
+        cost_summary = pricing.build_cost_summary(usage_rows, run_time)
         report = build_report(results, run_time)
 
         today = run_time.date()  # UTC date; matches calendar API timeMin/timeMax which are also UTC
@@ -65,6 +68,10 @@ async def main():
 
         if events_by_account:
             report = report + "\n\n" + build_calendar_section(events_by_account, today)
+
+        cost_footer = format_cost_footer(cost_summary)
+        if cost_footer:
+            report = report + "\n\n" + cost_footer
 
         await send_discord_dm(report, discord_token, discord_user_id)
         print(report)

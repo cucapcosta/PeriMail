@@ -3,10 +3,10 @@ import base64
 import os
 from datetime import datetime, UTC
 
-import aiohttp
 from dotenv import load_dotenv
 
 from peribot.core import pricing
+from peribot.core.notify import send_discord_dm
 from peribot.mail.auth import get_credentials
 from peribot.mail.calendar import get_calendar_service, list_events
 from peribot.core.crypto import decrypt
@@ -15,26 +15,6 @@ from peribot.mail.report import build_calendar_section, build_report, format_cos
 from peribot.mail.runner import run_all
 
 load_dotenv()
-
-
-async def send_discord_dm(report: str, token: str, user_id: str) -> None:
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            "https://discord.com/api/v10/users/@me/channels",
-            headers={"Authorization": f"Bot {token}", "Content-Type": "application/json"},
-            json={"recipient_id": user_id},
-        ) as resp:
-            resp.raise_for_status()
-            channel_id = (await resp.json())["id"]
-
-        chunks = [report[i:i+1900] for i in range(0, len(report), 1900)]
-        for chunk in chunks:
-            async with session.post(
-                f"https://discord.com/api/v10/channels/{channel_id}/messages",
-                headers={"Authorization": f"Bot {token}", "Content-Type": "application/json"},
-                json={"content": chunk},
-            ) as chunk_resp:
-                chunk_resp.raise_for_status()
 
 
 async def main():

@@ -1,5 +1,5 @@
-from perimail.auth import get_credentials, get_gmail_service
-from perimail.crypto import decrypt
+from peribot.mail.auth import get_credentials, get_gmail_service
+from peribot.mail.crypto import decrypt
 
 
 def gmail_service_for_account(account, encryption_key: bytes):

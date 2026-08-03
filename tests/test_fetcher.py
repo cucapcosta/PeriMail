@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from perimail.fetcher import fetch_message, list_message_ids, FULL_HEADERS
+from peribot.mail.fetcher import fetch_message, list_message_ids, FULL_HEADERS
 
 
 def test_fetch_message_builds_emailmessage():

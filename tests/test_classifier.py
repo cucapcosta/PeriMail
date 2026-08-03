@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
-from perimail.classifier import classify_by_rules
-from perimail.db import Category
-from perimail.fetcher import EmailMessage
+from peribot.mail.classifier import classify_by_rules
+from peribot.mail.db import Category
+from peribot.mail.fetcher import EmailMessage
 
 
 def make_category(name, keywords=None, header_triggers=None, applies_to="all"):
@@ -64,8 +64,8 @@ def test_first_category_wins():
     assert classify_by_rules(email, cats) == "Newsletter"
 
 
-from perimail.classifier import classify, classify_with_gemini
-from perimail.pricing import Usage
+from peribot.mail.classifier import classify, classify_with_gemini
+from peribot.mail.pricing import Usage
 
 
 def _gemini_response(text, in_tok=10, out_tok=2):
@@ -88,7 +88,7 @@ def test_classify_uses_rules_first():
 def test_classify_falls_back_to_gemini_when_no_rule_matches(mocker):
     cats = [make_category("Jobs", keywords=["internship"])]
     email = make_email(subject="Some unrelated subject")
-    mocker.patch("perimail.classifier.classify_with_gemini", return_value=("Useful", Usage(8, 1)))
+    mocker.patch("peribot.mail.classifier.classify_with_gemini", return_value=("Useful", Usage(8, 1)))
     category, method, usage = classify(email, cats, api_key="fake")
     assert category == "Useful"
     assert method == "gemini"
@@ -100,7 +100,7 @@ def test_classify_with_gemini_returns_valid_category(mocker):
     email = make_email(subject="We received your application")
     mock_client = MagicMock()
     mock_client.models.generate_content.return_value = _gemini_response("Jobs")
-    mocker.patch("perimail.classifier.genai.Client", return_value=mock_client)
+    mocker.patch("peribot.mail.classifier.genai.Client", return_value=mock_client)
     result, usage = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Jobs"
     assert usage.input_tokens == 10 and usage.output_tokens == 2
@@ -111,7 +111,7 @@ def test_classify_with_gemini_returns_unclassified_on_invalid_response(mocker):
     email = make_email(subject="Something")
     mock_client = MagicMock()
     mock_client.models.generate_content.return_value = _gemini_response("WeirdResponse")
-    mocker.patch("perimail.classifier.genai.Client", return_value=mock_client)
+    mocker.patch("peribot.mail.classifier.genai.Client", return_value=mock_client)
     result, usage = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Unclassified"
 
@@ -121,7 +121,7 @@ def test_classify_with_gemini_retries_on_exception(mocker):
     email = make_email(subject="Something")
     mock_client = MagicMock()
     mock_client.models.generate_content.side_effect = [Exception("API error")] * 3
-    mocker.patch("perimail.classifier.genai.Client", return_value=mock_client)
+    mocker.patch("peribot.mail.classifier.genai.Client", return_value=mock_client)
     mocker.patch("time.sleep")
     result, usage = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Unclassified"

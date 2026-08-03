@@ -6,13 +6,13 @@ from datetime import datetime, UTC
 import aiohttp
 from dotenv import load_dotenv
 
-from perimail import pricing
-from perimail.auth import get_credentials
-from perimail.calendar import get_calendar_service, list_events
-from perimail.crypto import decrypt
-from perimail.db import Database
-from perimail.report import build_calendar_section, build_report, format_cost_footer
-from perimail.runner import run_all
+from peribot.mail import pricing
+from peribot.mail.auth import get_credentials
+from peribot.mail.calendar import get_calendar_service, list_events
+from peribot.mail.crypto import decrypt
+from peribot.mail.db import Database
+from peribot.mail.report import build_calendar_section, build_report, format_cost_footer
+from peribot.mail.runner import run_all
 
 load_dotenv()
 

@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock
-from perimail.inferrer import infer
-from perimail.fetcher import EmailMessage
+from peribot.mail.inferrer import infer
+from peribot.mail.fetcher import EmailMessage
 
 
 def _cat(name):
-    from perimail.db import Category
+    from peribot.mail.db import Category
     return Category(id=1, name=name, label=f"PeriMail/{name}", description=f"{name} mail",
                     keywords=[], header_triggers=[], applies_to="all")
 
@@ -32,7 +32,7 @@ def test_infer_returns_reassignments_and_proposals(mocker):
     )
     client = MagicMock()
     client.models.generate_content.return_value = _resp(payload)
-    mocker.patch("perimail.inferrer.genai.Client", return_value=client)
+    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert reassignments == [{"message_id": "m2", "category": "Useful"}]
     assert proposals[0]["name"] == "Games"
@@ -43,7 +43,7 @@ def test_infer_drops_reassignment_to_unknown_category(mocker):
     payload = '{"reassignments": [{"message_id": "m2", "category": "Ghost"}], "proposals": []}'
     client = MagicMock()
     client.models.generate_content.return_value = _resp(payload)
-    mocker.patch("perimail.inferrer.genai.Client", return_value=client)
+    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert reassignments == []
 
@@ -52,7 +52,7 @@ def test_infer_drops_proposal_colliding_with_existing(mocker):
     payload = '{"reassignments": [], "proposals": [{"name": "Useful", "description": "x", "keywords": [], "sample_message_ids": []}]}'
     client = MagicMock()
     client.models.generate_content.return_value = _resp(payload)
-    mocker.patch("perimail.inferrer.genai.Client", return_value=client)
+    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert proposals == []
 
@@ -60,6 +60,6 @@ def test_infer_drops_proposal_colliding_with_existing(mocker):
 def test_infer_empty_on_bad_json(mocker):
     client = MagicMock()
     client.models.generate_content.return_value = _resp("garbage")
-    mocker.patch("perimail.inferrer.genai.Client", return_value=client)
+    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert reassignments == [] and proposals == []

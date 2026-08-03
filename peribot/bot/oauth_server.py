@@ -8,8 +8,8 @@ from typing import Optional
 
 from aiohttp import web
 
-from perimail.auth import exchange_code
-from perimail.crypto import encrypt
+from peribot.mail.auth import exchange_code
+from peribot.mail.crypto import encrypt
 
 
 class OAuthServer:

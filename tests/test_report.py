@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
-from perimail.calendar import CalendarEvent
-from perimail.report import build_report, build_calendar_section, format_cost_footer
-from perimail.runner import AccountResult
+from peribot.mail.calendar import CalendarEvent
+from peribot.mail.report import build_report, build_calendar_section, format_cost_footer
+from peribot.mail.runner import AccountResult
 
 
 def test_report_contains_account_emails():

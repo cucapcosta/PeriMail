@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from googleapiclient.errors import HttpError
 
-from perimail.calendar import (
+from peribot.mail.calendar import (
     CalendarEvent, _parse_event, list_events, create_event,
     update_event, delete_event, get_event, find_events,
 )

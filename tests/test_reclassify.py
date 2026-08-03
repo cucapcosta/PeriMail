@@ -1,5 +1,5 @@
 from datetime import date
-from bot.commands.reclassify import deeprun_since
+from peribot.bot.commands.reclassify import deeprun_since
 
 
 def test_deeprun_since_default_six_months():

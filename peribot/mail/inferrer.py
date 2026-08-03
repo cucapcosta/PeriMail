@@ -4,8 +4,8 @@ import time
 
 from google import genai
 
-from perimail import pricing
-from perimail.pricing import Usage
+from peribot.mail import pricing
+from peribot.mail.pricing import Usage
 
 
 def _extract_json(text: str) -> dict:

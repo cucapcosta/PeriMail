@@ -6,9 +6,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from perimail import pricing
-from perimail.report import build_report
-from perimail.runner import run_all
+from peribot.mail import pricing
+from peribot.mail.report import build_report
+from peribot.mail.runner import run_all
 
 
 def _authorized(interaction: discord.Interaction) -> bool:

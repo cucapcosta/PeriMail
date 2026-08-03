@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 
-from perimail import pricing
-from perimail.auth import get_credentials, get_gmail_service
-from perimail.classifier import classify, UNCLASSIFIED
-from perimail.crypto import decrypt
-from perimail.db import Database
-from perimail.fetcher import fetch_new_emails
-from perimail.inferrer import infer
-from perimail.labeler import apply_label, ensure_label_exists, perimail_label_ids, replace_label
-from perimail.scorer import score_urgency
+from peribot.mail import pricing
+from peribot.mail.auth import get_credentials, get_gmail_service
+from peribot.mail.classifier import classify, UNCLASSIFIED
+from peribot.mail.crypto import decrypt
+from peribot.mail.db import Database
+from peribot.mail.fetcher import fetch_new_emails
+from peribot.mail.inferrer import infer
+from peribot.mail.labeler import apply_label, ensure_label_exists, perimail_label_ids, replace_label
+from peribot.mail.scorer import score_urgency
 
 UNCLASSIFIED_LABEL = "PeriMail/Unclassified"
 

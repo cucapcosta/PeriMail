@@ -6,11 +6,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from perimail import pricing
-from perimail.classifier import classify, classify_by_rules, UNCLASSIFIED
-from perimail.fetcher import fetch_message, list_message_ids
-from perimail.labeler import ensure_label_exists, perimail_label_ids, replace_label
-from perimail.services import gmail_service_for_account
+from peribot.mail import pricing
+from peribot.mail.classifier import classify, classify_by_rules, UNCLASSIFIED
+from peribot.mail.fetcher import fetch_message, list_message_ids
+from peribot.mail.labeler import ensure_label_exists, perimail_label_ids, replace_label
+from peribot.mail.services import gmail_service_for_account
 
 UNCLASSIFIED_LABEL = "PeriMail/Unclassified"
 

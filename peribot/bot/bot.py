@@ -7,8 +7,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from bot.oauth_server import OAuthServer
-from perimail.db import Database
+from peribot.bot.oauth_server import OAuthServer
+from peribot.mail.db import Database
 
 load_dotenv()
 
@@ -23,12 +23,12 @@ class PeriMailBot(commands.Bot):
         self.encryption_key = base64.b64decode(os.environ["ENCRYPTION_KEY"])
 
     async def setup_hook(self):
-        await self.load_extension("bot.commands.accounts")
-        await self.load_extension("bot.commands.categories")
-        await self.load_extension("bot.commands.run")
-        await self.load_extension("bot.commands.calendar")
-        await self.load_extension("bot.commands.proposals")
-        await self.load_extension("bot.commands.reclassify")
+        await self.load_extension("peribot.bot.commands.accounts")
+        await self.load_extension("peribot.bot.commands.categories")
+        await self.load_extension("peribot.bot.commands.run")
+        await self.load_extension("peribot.bot.commands.calendar")
+        await self.load_extension("peribot.bot.commands.proposals")
+        await self.load_extension("peribot.bot.commands.reclassify")
         await self.tree.sync()
 
     async def on_ready(self):

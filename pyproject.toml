@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "perimail"
+name = "peribot"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
@@ -27,7 +27,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["perimail*", "bot*"]
+include = ["peribot*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

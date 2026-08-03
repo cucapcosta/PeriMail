@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from perimail.auth import generate_auth_url
+from peribot.mail.auth import generate_auth_url
 
 
 def _authorized(interaction: discord.Interaction) -> bool:

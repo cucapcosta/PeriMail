@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from perimail.labeler import replace_label, perimail_label_ids
+from peribot.mail.labeler import replace_label, perimail_label_ids
 
 
 def _service_with_labels(labels):

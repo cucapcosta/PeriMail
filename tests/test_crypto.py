@@ -1,6 +1,6 @@
 import os
 import pytest
-from perimail.crypto import decrypt, encrypt
+from peribot.mail.crypto import decrypt, encrypt
 
 
 @pytest.fixture

@@ -7,13 +7,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from perimail.auth import get_credentials
-from perimail.calendar import (
+from peribot.mail.auth import get_credentials
+from peribot.mail.calendar import (
     CalendarEvent, get_calendar_service, list_events, create_event,
     update_event, delete_event, find_events, get_event,
 )
-from perimail.crypto import decrypt
-from perimail.report import _MONTH_NAMES
+from peribot.mail.crypto import decrypt
+from peribot.mail.report import _MONTH_NAMES
 
 
 def _authorized(interaction: discord.Interaction) -> bool:

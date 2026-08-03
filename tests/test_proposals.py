@@ -1,5 +1,5 @@
-from perimail.db import Proposal
-from bot.commands.proposals import format_proposal_text
+from peribot.mail.db import Proposal
+from peribot.bot.commands.proposals import format_proposal_text
 
 
 def test_format_proposal_text():

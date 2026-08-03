@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
-from perimail.calendar import CalendarEvent
-from bot.commands.calendar import _format_event, _parse_date, _parse_datetime
+from peribot.mail.calendar import CalendarEvent
+from peribot.bot.commands.calendar import _format_event, _parse_date, _parse_datetime
 
 
 def test_parse_date_dd_mm():

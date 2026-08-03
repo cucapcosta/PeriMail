@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from perimail.calendar import CalendarEvent
+from peribot.mail.calendar import CalendarEvent
 import main as main_module
 
 

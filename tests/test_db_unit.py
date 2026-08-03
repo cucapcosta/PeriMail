@@ -1,4 +1,4 @@
-from perimail.db import Category, Proposal
+from peribot.mail.db import Category, Proposal
 
 
 def test_category_score_urgency_defaults_false():

@@ -2,5 +2,5 @@
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "python main.py"
+startCommand = "python -m peribot.jobs.mail_report"
 cronSchedule = "0 10 * * *"

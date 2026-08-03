@@ -1,2 +1,2 @@
 #!/bin/sh
-exec ${START_CMD:-python -m bot.bot}
+exec ${START_CMD:-python -m peribot.bot}

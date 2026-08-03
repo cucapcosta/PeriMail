@@ -9,7 +9,7 @@ from typing import Optional
 from aiohttp import web
 
 from peribot.mail.auth import exchange_code
-from peribot.mail.crypto import encrypt
+from peribot.core.crypto import encrypt
 
 
 class OAuthServer:

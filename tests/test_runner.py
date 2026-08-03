@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from peribot.mail.db import Account, Category, Database
+from peribot.core.db import Account, Category, Database
 from peribot.mail.fetcher import EmailMessage
 from peribot.mail.runner import AccountResult, run_account
 
@@ -27,7 +27,7 @@ async def db():
 @pytest.fixture
 def account():
     import base64, os as _os
-    from peribot.mail.crypto import encrypt
+    from peribot.core.crypto import encrypt
     key = _os.urandom(32)
     tokens = json.dumps({
         "token": "tok", "refresh_token": "rtok",
@@ -48,7 +48,7 @@ async def test_run_account_labels_new_emails(db, account, mocker):
     mocker.patch("peribot.mail.runner.fetch_new_emails", return_value=[email])
     mocker.patch("peribot.mail.runner.ensure_label_exists", return_value="label_id_jobs")
     mocker.patch("peribot.mail.runner.apply_label")
-    from peribot.mail.pricing import Usage
+    from peribot.core.pricing import Usage
     mocker.patch("peribot.mail.runner.classify", return_value=("Jobs", "rules", Usage()))
     mocker.patch("peribot.mail.runner.score_urgency", return_value=(None, "", Usage()))
     mocker.patch("peribot.mail.runner.infer", return_value=([], [], Usage()))
@@ -103,7 +103,7 @@ async def test_run_account_scores_urgency_for_flagged_category(db, account, mock
     mocker.patch("peribot.mail.runner.fetch_new_emails", return_value=[email])
     mocker.patch("peribot.mail.runner.ensure_label_exists", return_value="lid")
     mocker.patch("peribot.mail.runner.apply_label")
-    from peribot.mail.pricing import Usage
+    from peribot.core.pricing import Usage
     mocker.patch("peribot.mail.runner.classify", return_value=("Useful", "rules", Usage()))
     score_mock = mocker.patch("peribot.mail.runner.score_urgency", return_value=(5, "urgent", Usage(5, 1)))
     mocker.patch("peribot.mail.runner.infer", return_value=([], [], Usage()))

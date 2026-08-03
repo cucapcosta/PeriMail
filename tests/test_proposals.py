@@ -1,4 +1,4 @@
-from peribot.mail.db import Proposal
+from peribot.core.db import Proposal
 from peribot.bot.commands.proposals import format_proposal_text
 
 

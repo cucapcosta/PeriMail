@@ -8,7 +8,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from peribot.bot.oauth_server import OAuthServer
-from peribot.mail.db import Database
+from peribot.core.db import Database
 
 load_dotenv()
 

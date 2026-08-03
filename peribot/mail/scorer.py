@@ -4,8 +4,8 @@ import time
 
 from google import genai
 
-from peribot.mail import pricing
-from peribot.mail.pricing import Usage
+from peribot.core import pricing
+from peribot.core.pricing import Usage
 from peribot.mail.fetcher import EmailMessage
 
 

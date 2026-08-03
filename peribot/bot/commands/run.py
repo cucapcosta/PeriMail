@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from peribot.mail import pricing
+from peribot.core import pricing
 from peribot.mail.report import build_report
 from peribot.mail.runner import run_all
 

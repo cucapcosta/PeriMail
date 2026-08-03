@@ -4,7 +4,7 @@ from peribot.mail.fetcher import EmailMessage
 
 
 def _cat(name):
-    from peribot.mail.db import Category
+    from peribot.core.db import Category
     return Category(id=1, name=name, label=f"PeriMail/{name}", description=f"{name} mail",
                     keywords=[], header_triggers=[], applies_to="all")
 

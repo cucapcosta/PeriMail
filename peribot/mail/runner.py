@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 
-from peribot.mail import pricing
+from peribot.core import pricing
 from peribot.mail.auth import get_credentials, get_gmail_service
 from peribot.mail.classifier import classify, UNCLASSIFIED
-from peribot.mail.crypto import decrypt
-from peribot.mail.db import Database
+from peribot.core.crypto import decrypt
+from peribot.core.db import Database
 from peribot.mail.fetcher import fetch_new_emails
 from peribot.mail.inferrer import infer
 from peribot.mail.labeler import apply_label, ensure_label_exists, perimail_label_ids, replace_label

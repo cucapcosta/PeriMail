@@ -1,6 +1,6 @@
 import os
 import pytest
-from peribot.mail.db import Database
+from peribot.core.db import Database
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 pytestmark = pytest.mark.skipif(

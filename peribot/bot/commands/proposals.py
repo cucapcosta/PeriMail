@@ -5,7 +5,7 @@ from collections import defaultdict
 import discord
 from discord.ext import commands, tasks
 
-from peribot.mail.db import Proposal
+from peribot.core.db import Proposal
 from peribot.mail.labeler import ensure_label_exists, perimail_label_ids, replace_label
 from peribot.mail.services import gmail_service_for_account
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from peribot.mail.pricing import Usage, cost, build_cost_summary, DEFAULT_PRICES
+from peribot.core.pricing import Usage, cost, build_cost_summary, DEFAULT_PRICES
 
 
 def test_usage_defaults_zero():

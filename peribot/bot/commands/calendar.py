@@ -12,7 +12,7 @@ from peribot.mail.calendar import (
     CalendarEvent, get_calendar_service, list_events, create_event,
     update_event, delete_event, find_events, get_event,
 )
-from peribot.mail.crypto import decrypt
+from peribot.core.crypto import decrypt
 from peribot.mail.report import _MONTH_NAMES
 
 

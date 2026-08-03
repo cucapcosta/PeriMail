@@ -6,11 +6,11 @@ from datetime import datetime, UTC
 import aiohttp
 from dotenv import load_dotenv
 
-from peribot.mail import pricing
+from peribot.core import pricing
 from peribot.mail.auth import get_credentials
 from peribot.mail.calendar import get_calendar_service, list_events
-from peribot.mail.crypto import decrypt
-from peribot.mail.db import Database
+from peribot.core.crypto import decrypt
+from peribot.core.db import Database
 from peribot.mail.report import build_calendar_section, build_report, format_cost_footer
 from peribot.mail.runner import run_all
 

@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from peribot.mail.db import Account
+from peribot.core.db import Account
 from peribot.mail.services import gmail_service_for_account
 
 

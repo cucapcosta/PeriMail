@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from peribot.mail.classifier import classify_by_rules
-from peribot.mail.db import Category
+from peribot.core.db import Category
 from peribot.mail.fetcher import EmailMessage
 
 
@@ -65,7 +65,7 @@ def test_first_category_wins():
 
 
 from peribot.mail.classifier import classify, classify_with_gemini
-from peribot.mail.pricing import Usage
+from peribot.core.pricing import Usage
 
 
 def _gemini_response(text, in_tok=10, out_tok=2):

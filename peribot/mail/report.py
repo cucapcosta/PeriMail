@@ -17,6 +17,13 @@ def build_report(results: dict, run_time: datetime, cost_summary: dict = None) -
 
     for email, result in results.items():
         lines.append(f"**{email}**")
+        if result.error:
+            if "invalid_grant" in result.error:
+                lines.append("  ⚠️ Google session expired — reconnect with /add-account (reauth)")
+            else:
+                lines.append(f"  ⚠️ Run failed: {result.error[:120]}")
+            lines.append("")
+            continue
         if not result.category_counts:
             lines.append("  No new emails")
         else:

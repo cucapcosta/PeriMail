@@ -32,7 +32,7 @@ def test_infer_returns_reassignments_and_proposals(mocker):
     )
     client = MagicMock()
     client.models.generate_content.return_value = _resp(payload)
-    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
+    mocker.patch("google.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert reassignments == [{"message_id": "m2", "category": "Useful"}]
     assert proposals[0]["name"] == "Games"
@@ -43,7 +43,7 @@ def test_infer_drops_reassignment_to_unknown_category(mocker):
     payload = '{"reassignments": [{"message_id": "m2", "category": "Ghost"}], "proposals": []}'
     client = MagicMock()
     client.models.generate_content.return_value = _resp(payload)
-    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
+    mocker.patch("google.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert reassignments == []
 
@@ -52,7 +52,7 @@ def test_infer_drops_proposal_colliding_with_existing(mocker):
     payload = '{"reassignments": [], "proposals": [{"name": "Useful", "description": "x", "keywords": [], "sample_message_ids": []}]}'
     client = MagicMock()
     client.models.generate_content.return_value = _resp(payload)
-    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
+    mocker.patch("google.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert proposals == []
 
@@ -60,6 +60,6 @@ def test_infer_drops_proposal_colliding_with_existing(mocker):
 def test_infer_empty_on_bad_json(mocker):
     client = MagicMock()
     client.models.generate_content.return_value = _resp("garbage")
-    mocker.patch("peribot.mail.inferrer.genai.Client", return_value=client)
+    mocker.patch("google.genai.Client", return_value=client)
     reassignments, proposals, usage = infer(_emails(), [_cat("Useful")], api_key="fake")
     assert reassignments == [] and proposals == []

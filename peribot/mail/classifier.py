@@ -1,7 +1,5 @@
 import time
 
-from google import genai
-
 from peribot.core import pricing
 from peribot.core.pricing import Usage
 from peribot.mail.fetcher import EmailMessage
@@ -24,6 +22,7 @@ def classify_by_rules(email: EmailMessage, categories: list) -> str | None:
 
 def classify_with_gemini(email: EmailMessage, categories: list, api_key: str) -> tuple:
     """Returns (category_name, Usage)."""
+    from google import genai  # lazy: keeps google-genai out of the idle bot's memory
     client = genai.Client(api_key=api_key)
     category_list = "\n".join(f"- {cat.name}: {cat.description}" for cat in categories)
     prompt = (

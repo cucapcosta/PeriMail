@@ -25,6 +25,7 @@ class AccountResult:
     urgent: list = field(default_factory=list)          # (score, subject)
     reassigned_count: int = 0
     proposals_count: int = 0
+    error: str = ""                                     # set when the whole account failed
 
 
 async def _record(db, call_type, usage):
@@ -117,5 +118,9 @@ async def run_all(db: Database, gemini_api_key: str, encryption_key: bytes) -> d
     accounts = await db.list_accounts()
     results = {}
     for account in accounts:
-        results[account.email] = await run_account(account, db, gemini_api_key, encryption_key)
+        try:
+            results[account.email] = await run_account(account, db, gemini_api_key, encryption_key)
+        except Exception as e:
+            print(f"Account {account.email} failed: {e}")
+            results[account.email] = AccountResult(email=account.email, error=str(e))
     return results

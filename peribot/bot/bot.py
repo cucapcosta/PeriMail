@@ -17,7 +17,12 @@ class PeriMailBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True  # Required for wait_for message content — enable in Discord Developer Portal
-        super().__init__(command_prefix="!", intents=intents)
+        super().__init__(
+            command_prefix="!",
+            intents=intents,
+            chunk_guilds_at_startup=False,  # skip member chunking — lowers idle RAM
+            max_messages=None,              # disable message cache — wait_for uses event listeners
+        )
         self.db = Database()
         self.oauth_server = OAuthServer()
         self.encryption_key = base64.b64decode(os.environ["ENCRYPTION_KEY"])

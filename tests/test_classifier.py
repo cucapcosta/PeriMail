@@ -100,7 +100,7 @@ def test_classify_with_gemini_returns_valid_category(mocker):
     email = make_email(subject="We received your application")
     mock_client = MagicMock()
     mock_client.models.generate_content.return_value = _gemini_response("Jobs")
-    mocker.patch("peribot.mail.classifier.genai.Client", return_value=mock_client)
+    mocker.patch("google.genai.Client", return_value=mock_client)
     result, usage = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Jobs"
     assert usage.input_tokens == 10 and usage.output_tokens == 2
@@ -111,7 +111,7 @@ def test_classify_with_gemini_returns_unclassified_on_invalid_response(mocker):
     email = make_email(subject="Something")
     mock_client = MagicMock()
     mock_client.models.generate_content.return_value = _gemini_response("WeirdResponse")
-    mocker.patch("peribot.mail.classifier.genai.Client", return_value=mock_client)
+    mocker.patch("google.genai.Client", return_value=mock_client)
     result, usage = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Unclassified"
 
@@ -121,7 +121,7 @@ def test_classify_with_gemini_retries_on_exception(mocker):
     email = make_email(subject="Something")
     mock_client = MagicMock()
     mock_client.models.generate_content.side_effect = [Exception("API error")] * 3
-    mocker.patch("peribot.mail.classifier.genai.Client", return_value=mock_client)
+    mocker.patch("google.genai.Client", return_value=mock_client)
     mocker.patch("time.sleep")
     result, usage = classify_with_gemini(email, cats, api_key="fake_key")
     assert result == "Unclassified"

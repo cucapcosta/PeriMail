@@ -2,8 +2,6 @@ import json
 import re
 import time
 
-from google import genai
-
 from peribot.core import pricing
 from peribot.core.pricing import Usage
 from peribot.mail.fetcher import EmailMessage
@@ -19,6 +17,7 @@ def _extract_json(text: str) -> dict:
 
 def score_urgency(email: EmailMessage, api_key: str) -> tuple:
     """Returns (score:int|None, reason:str, Usage). score is 1-5 or None on failure."""
+    from google import genai  # lazy: keeps google-genai out of the idle bot's memory
     client = genai.Client(api_key=api_key)
     prompt = (
         "Rate the urgency/importance of this email on a scale of 1 to 5 "

@@ -2,8 +2,6 @@ import json
 import re
 import time
 
-from google import genai
-
 from peribot.core import pricing
 from peribot.core.pricing import Usage
 
@@ -22,6 +20,7 @@ def infer(unclassified_emails: list, existing_categories: list, api_key: str) ->
       reassignments: [{message_id, category}] into EXISTING categories
       proposals:     [{name, description, keywords, sample_message_ids}] for NEW categories
     """
+    from google import genai  # lazy: keeps google-genai out of the idle bot's memory
     client = genai.Client(api_key=api_key)
     existing_names = {c.name for c in existing_categories}
     cat_list = "\n".join(f"- {c.name}: {c.description}" for c in existing_categories)

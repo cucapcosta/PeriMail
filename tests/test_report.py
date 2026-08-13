@@ -29,7 +29,7 @@ def test_report_contains_totals():
         ),
     }
     report = build_report(results, datetime(2026, 5, 19, 7, 0))
-    assert "Classified by rules: 2 | Gemini: 0 | Failed: 1" in report
+    assert "**Totals** — Rules: 2 · Gemini: 0 · Failed: 1" in report
 
 
 def test_report_no_accounts():

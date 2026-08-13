@@ -1,3 +1,4 @@
+import inspect
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 
@@ -33,7 +34,16 @@ async def _record(db, call_type, usage):
         await db.record_usage(pricing.MODEL, call_type, usage.input_tokens, usage.output_tokens)
 
 
-async def run_account(account, db: Database, gemini_api_key: str, encryption_key: bytes, run_inference: bool = True) -> AccountResult:
+async def _emit_progress(on_progress, account_email: str, done: int, total: int):
+    """Notify the optional progress callback (sync or async)."""
+    if on_progress is None:
+        return
+    rv = on_progress(account_email, done, total)
+    if inspect.isawaitable(rv):
+        await rv
+
+
+async def run_account(account, db: Database, gemini_api_key: str, encryption_key: bytes, run_inference: bool = True, on_progress=None) -> AccountResult:
     result = AccountResult(email=account.email)
 
     tokens_json = decrypt(account.encrypted_tokens, encryption_key)
@@ -53,9 +63,14 @@ async def run_account(account, db: Database, gemini_api_key: str, encryption_key
     emails = fetch_new_emails(service, since_date)
 
     unclassified = []
+    total = len(emails)
+    done = 0
+    await _emit_progress(on_progress, account.email, done, total)
 
     for email in emails:
         if await db.is_processed(email.id, account.email):
+            done += 1
+            await _emit_progress(on_progress, account.email, done, total)
             continue
 
         try:
@@ -63,6 +78,8 @@ async def run_account(account, db: Database, gemini_api_key: str, encryption_key
         except Exception:
             result.failed_count += 1
             await db.mark_processed(email.id, account.email, UNCLASSIFIED, "error", subject=email.subject)
+            done += 1
+            await _emit_progress(on_progress, account.email, done, total)
             continue
 
         await _record(db, "classify", usage)
@@ -89,6 +106,9 @@ async def run_account(account, db: Database, gemini_api_key: str, encryption_key
         if category_name == UNCLASSIFIED:
             unclassified.append(email)
 
+        done += 1
+        await _emit_progress(on_progress, account.email, done, total)
+
     if run_inference and unclassified:
         reassignments, proposals, iusage = infer(unclassified, categories, gemini_api_key)
         await _record(db, "infer", iusage)
@@ -114,12 +134,14 @@ async def run_account(account, db: Database, gemini_api_key: str, encryption_key
     return result
 
 
-async def run_all(db: Database, gemini_api_key: str, encryption_key: bytes) -> dict:
+async def run_all(db: Database, gemini_api_key: str, encryption_key: bytes, on_progress=None) -> dict:
     accounts = await db.list_accounts()
     results = {}
     for account in accounts:
         try:
-            results[account.email] = await run_account(account, db, gemini_api_key, encryption_key)
+            results[account.email] = await run_account(
+                account, db, gemini_api_key, encryption_key, on_progress=on_progress
+            )
         except Exception as e:
             print(f"Account {account.email} failed: {e}")
             results[account.email] = AccountResult(email=account.email, error=str(e))

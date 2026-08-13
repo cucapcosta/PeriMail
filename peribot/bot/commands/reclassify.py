@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from peribot.core import pricing
+from peribot.bot.progress import progress_bar, ThrottledEditor
 from peribot.mail.classifier import classify, classify_by_rules, UNCLASSIFIED
 from peribot.mail.fetcher import fetch_message, list_message_ids
 from peribot.mail.labeler import ensure_label_exists, perimail_label_ids, replace_label
@@ -75,18 +76,26 @@ class ReclassifyCog(commands.Cog):
             await interaction.response.send_message("Unauthorized.", ephemeral=True)
             return
         await interaction.response.send_message(f"Deep run started ({months} months, rules only)…", ephemeral=True)
-        status = await interaction.user.send(f"🔍 Deep run: 0 processed…")
+        status = await interaction.user.send("🔍 Deep run: scanning mailboxes…")
+        editor = ThrottledEditor(status)
         db = self.bot.db
         since = deeprun_since(datetime.now(UTC).date(), months)
         processed = 0
         changed = 0
+        total = 0
         try:
+            # List IDs for every account first so the total is known upfront.
+            work = []
             for account in await db.list_accounts():
                 service = gmail_service_for_account(account, self.bot.encryption_key)
+                message_ids = list_message_ids(service, f"after:{since}")
+                work.append((account, service, message_ids))
+            total = sum(len(ids) for _, _, ids in work)
+
+            for account, service, message_ids in work:
                 categories = await db.get_categories(account.account_type)
                 label_ids = _build_label_map(service, categories)
                 all_ids = perimail_label_ids(service) | set(label_ids.values())
-                message_ids = list_message_ids(service, f"after:{since}")
                 for mid in message_ids:
                     try:
                         email = fetch_message(service, mid)
@@ -99,14 +108,15 @@ class ReclassifyCog(commands.Cog):
                     processed += 1
                     if category != UNCLASSIFIED:
                         changed += 1
-                    if processed % 200 == 0:
-                        try:
-                            await status.edit(content=f"🔍 Deep run: {processed} processed…")
-                        except Exception:
-                            pass
-            await status.edit(content=f"✅ Deep run done: {processed} processed, {changed} matched a category.")
+                    await editor.update(
+                        f"🔍 Deep run ({months} months, rules only)\n{progress_bar(processed, total)}"
+                    )
+            await editor.update(
+                f"✅ Deep run done\n{progress_bar(processed, total)}\n{changed} matched a category.",
+                force=True,
+            )
         except Exception as e:
-            await status.edit(content=f"❌ Deep run error after {processed}: {e}")
+            await editor.update(f"❌ Deep run error after {processed}/{total}: {e}", force=True)
 
 
 async def setup(bot: commands.Bot):
